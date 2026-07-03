@@ -450,6 +450,16 @@ class VisualEngine:
             self._draw_pixel(frame, n, idle, space, px, py, wp, max_h, w, h)
         elif effect == 'double_symmetric':
             self._draw_double_symmetric(frame, n, idle, space, px, py, wp, max_h, w, h)
+        elif effect == 'dots_pixel':
+            self._draw_dots_pixel(frame, n, idle, space, px, py, wp, max_h, w, h)
+        elif effect == 'filled_wave':
+            self._draw_filled_wave(frame, n, idle, space, px, py, wp, max_h, w, h)
+        elif effect == 'sinusoidal':
+            self._draw_sinusoidal(frame, n, idle, space, px, py, wp, max_h, w, h)
+        elif effect == 'smooth_blob':
+            self._draw_smooth_blob(frame, n, idle, space, px, py, wp, max_h, w, h)
+        elif effect == 'halftone':
+            self._draw_halftone(frame, n, idle, space, px, py, wp, max_h, w, h)
         else:
             bar_style = cfg.get('bar_style', 'bottom')
             self._draw_spectrum(frame, n, idle, space, px, py, wp, max_h, w, h, bar_style)
@@ -697,6 +707,133 @@ class VisualEngine:
             mws = m_x2s - m_x1s
             if mws > 0 and hs > 0:
                 frame[y1s:y2s, m_x1s:m_x2s] = bg[y1s-y1:y1s-y1+hs, m_x1s-m_x1:m_x1s-m_x1+mws]
+
+    # ═══════════════════════════════════════════════════════════
+    #  DOTS PIXEL  (lingkaran di puncak bar)
+    # ═══════════════════════════════════════════════════════════
+    def _draw_dots_pixel(self, frame, n, idle, space, px, py, wp, max_h, w, h):
+        bar_w = max(2, int((w * wp - space * (n - 1)) / n))
+        s_x   = int((w * px) - (w * wp / 2))
+        b_y   = int(h * py)
+        for i in range(n):
+            height = int(max(idle, min(max_h, self.bar_h[i] * max_h)))
+            if height <= 0: continue
+            cx = s_x + i * (bar_w + space) + bar_w // 2
+            cy = b_y - height
+            r = max(2, int(height * 0.3))
+            color = self._bar_color(i, n)
+            cv2.circle(frame, (cx, cy), r, color, -1)
+
+    # ═══════════════════════════════════════════════════════════
+    #  FILLED WAVE  (gelombang terisi penuh)
+    # ═══════════════════════════════════════════════════════════
+    def _draw_filled_wave(self, frame, n, idle, space, px, py, wp, max_h, w, h):
+        tot_w = w * wp
+        s_x   = int((w * px) - (tot_w / 2))
+        b_y   = int(h * py)
+        step  = tot_w / n
+
+        pts = []
+        for i in range(n):
+            height = max(idle, min(max_h, self.bar_h[i] * max_h))
+            x = int(s_x + i * step)
+            pts.append((x, int(b_y - height)))
+        # tutup polygon dari kanan bawah ke kiri bawah
+        pts.append((int(s_x + tot_w), b_y))
+        pts.append((s_x, b_y))
+
+        if len(pts) >= 3:
+            overlay_wave = frame.copy()
+            cv2.fillPoly(overlay_wave, [np.array(pts, dtype=np.int32)], self.col_bot)
+            cv2.addWeighted(overlay_wave, 0.55, frame, 0.45, 0, frame)
+
+        # garis atas
+        for i in range(1, n):
+            h1 = max(idle, min(max_h, self.bar_h[i-1] * max_h))
+            h2 = max(idle, min(max_h, self.bar_h[i] * max_h))
+            x1 = int(s_x + (i-1) * step)
+            x2 = int(s_x + i * step)
+            cv2.line(frame, (x1, int(b_y - h1)), (x2, int(b_y - h2)), self.col_top, 3)
+
+    # ═══════════════════════════════════════════════════════════
+    #  SINUSOIDAL  (gelombang sinusoidal berfrekuensi audio)
+    # ═══════════════════════════════════════════════════════════
+    def _draw_sinusoidal(self, frame, n, idle, space, px, py, wp, max_h, w, h):
+        tot_w = w * wp
+        s_x   = int((w * px) - (tot_w / 2))
+        b_y   = int(h * py)
+        amp   = max_h * 0.4
+        freq  = 4.0  # jumlah gelombang
+
+        pts = []
+        for i in range(n):
+            t = i / max(1, n - 1)
+            modulation = self.bar_h[i]  # 0..1 dari audio
+            wave = math.sin(t * freq * 2 * math.pi + math.pi * 0.5) * modulation * amp
+            height = max(idle, wave + amp * modulation * 0.3)
+            x = int(s_x + i * (tot_w / n))
+            y = int(b_y - height)
+            pts.append((x, y))
+
+        if len(pts) >= 2:
+            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], False, self.col_top, 2)
+            # glow tipis
+            overlay_sin = frame.copy()
+            for i in range(n):
+                h = max(0, b_y - pts[i][1])
+                cv2.line(overlay_sin, (pts[i][0], b_y), (pts[i][0], pts[i][1]), self.col_bot, max(1, int(h * 0.15)))
+            cv2.addWeighted(overlay_sin, 0.3, frame, 0.7, 0, frame)
+
+    # ═══════════════════════════════════════════════════════════
+    #  SMOOTH BLOB  (gumpalan organik halus)
+    # ═══════════════════════════════════════════════════════════
+    def _draw_smooth_blob(self, frame, n, idle, space, px, py, wp, max_h, w, h):
+        cx = int(w * px)
+        cy = int(h * py)
+        base_r = min(w, h) * 0.08
+        blob_amp = min(w, h) * 0.25
+
+        angle_step = (2 * math.pi) / n
+        pts = []
+        for i in range(n):
+            angle = i * angle_step - math.pi / 2
+            r_offset = self.bar_h[i] * blob_amp
+            r = base_r + r_offset
+            x = int(cx + r * math.cos(angle))
+            y = int(cy + r * math.sin(angle))
+            pts.append([x, y])
+
+        if len(pts) >= 3:
+            overlay_blob = frame.copy()
+            cv2.fillPoly(overlay_blob, [np.array(pts, dtype=np.int32)], self.col_bot)
+            # blur untuk efek halus
+            overlay_blob = cv2.GaussianBlur(overlay_blob, (15, 15), 0)
+            cv2.addWeighted(overlay_blob, 0.6, frame, 1.0, 0, frame)
+            # core outline
+            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, self.col_top, 2)
+
+    # ═══════════════════════════════════════════════════════════
+    #  HALFTONE DOTS  (titik-titik yang membesar oleh audio)
+    # ═══════════════════════════════════════════════════════════
+    def _draw_halftone(self, frame, n, idle, space, px, py, wp, max_h, w, h):
+        cols = int(n * 0.5)
+        rows = max(3, int(cols * 0.4))
+        cell_w = int(w * wp / cols)
+        cell_h = int(max_h * 0.8 / rows)
+        start_x = int(w * px) - (cols * cell_w) // 2
+        start_y = int(h * py) - (rows * cell_h) // 2
+
+        for r in range(rows):
+            for c in range(cols):
+                idx = (r * cols + c) % n
+                amp = self.bar_h[idx]
+                dot_r = max(1, int(amp * 0.12 * min(cell_w, cell_h)))
+                if dot_r > 0:
+                    dx = start_x + c * cell_w + cell_w // 2
+                    dy = start_y + r * cell_h + cell_h // 2
+                    t = idx / max(1, n - 1)
+                    color = self._bar_color(int(idx), int(n))
+                    cv2.circle(frame, (dx, dy), dot_r, color, -1)
 
     # ═══════════════════════════════════════════════════════════
     #  BEAT PULSE / GLOW  (overlay flash saat bass hit)

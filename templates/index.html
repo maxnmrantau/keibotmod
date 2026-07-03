@@ -793,6 +793,11 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="sunburst">☀ Radial Sunburst</option>
                 <option value="pixel">▦ Pixel Blocks (8-bit)</option>
                 <option value="double_symmetric">⇆ Double Symmetric</option>
+                <option value="dots_pixel">● Dots Pixel</option>
+                <option value="filled_wave">▬ Filled Wave</option>
+                <option value="sinusoidal">∿ Sinusoidal</option>
+                <option value="smooth_blob">◍ Smooth Blob</option>
+                <option value="halftone">⋯ Halftone Dots</option>
               </select>
             </div>
 
@@ -2222,6 +2227,16 @@ function drawLivePreview() {
       drawPreviewPixel(cw, ch, cfg);
     } else if (fx === 'double_symmetric') {
       drawPreviewDoubleSymmetric(cw, ch, cfg);
+    } else if (fx === 'dots_pixel') {
+      drawPreviewDotsPixel(cw, ch, cfg);
+    } else if (fx === 'filled_wave') {
+      drawPreviewFilledWave(cw, ch, cfg);
+    } else if (fx === 'sinusoidal') {
+      drawPreviewSinusoidal(cw, ch, cfg);
+    } else if (fx === 'smooth_blob') {
+      drawPreviewSmoothBlob(cw, ch, cfg);
+    } else if (fx === 'halftone') {
+      drawPreviewHalftone(cw, ch, cfg);
     } else {
       drawPreviewSpectrum(cw, ch, cfg);
     }
@@ -2558,6 +2573,113 @@ function drawPreviewDoubleSymmetric(cw, ch, cfg) {
     const barGrad2 = vCtx.createLinearGradient(0, y1, 0, baseY);
     barGrad2.addColorStop(0, cfg.color_top); barGrad2.addColorStop(1, cfg.color_bot);
     vCtx.fillStyle = barGrad2; vCtx.fillRect(m_x, y1, barW, h_val);
+  }
+}
+
+// ════════ PREVIEW: Dots Pixel ════════
+function drawPreviewDotsPixel(cw, ch, cfg) {
+  const totW = cw * (cfg.width_pct/100); const barW = Math.max(2, (totW - cfg.spacing * (cfg.bar_count - 1)) / cfg.bar_count);
+  const startX = cw * (cfg.pos_x/100) - totW / 2; const baseY = ch * (cfg.pos_y/100); const limitH = ch * (cfg.max_height/100);
+  for (let i = 0; i < cfg.bar_count; i++) {
+    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i]), limitH);
+    if (h_val <= 0) continue;
+    const cx = startX + i * (barW + cfg.spacing) + barW / 2;
+    const cy = baseY - h_val;
+    const r = Math.max(2, h_val * 0.3);
+    const t = i / Math.max(1, cfg.bar_count - 1);
+    vCtx.fillStyle = lerpColor(cfg.color_top, cfg.color_bot, t);
+    vCtx.beginPath(); vCtx.arc(cx, cy, r, 0, Math.PI * 2); vCtx.fill();
+  }
+}
+
+// ════════ PREVIEW: Filled Wave ════════
+function drawPreviewFilledWave(cw, ch, cfg) {
+  const totW = cw * (cfg.width_pct/100); const startX = cw * (cfg.pos_x/100) - totW / 2;
+  const baseY = ch * (cfg.pos_y/100); const limitH = ch * (cfg.max_height/100); const step = totW / cfg.bar_count;
+  const pts = [];
+  for (let i = 0; i < cfg.bar_count; i++) {
+    const h_val = Math.max(cfg.idle_height, Math.min(limitH, prev_bars[i]));
+    pts.push({x: startX + i * step, y: baseY - h_val});
+  }
+  // fill
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, baseY);
+  for (const p of pts) vCtx.lineTo(p.x, p.y);
+  vCtx.lineTo(pts[pts.length-1].x, baseY); vCtx.closePath();
+  vCtx.globalAlpha = 0.45; vCtx.fillStyle = cfg.color_bot; vCtx.fill(); vCtx.globalAlpha = 1;
+  // line
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) vCtx.lineTo(pts[i].x, pts[i].y);
+  vCtx.strokeStyle = cfg.color_top; vCtx.lineWidth = 3; vCtx.stroke();
+}
+
+// ════════ PREVIEW: Sinusoidal ════════
+function drawPreviewSinusoidal(cw, ch, cfg) {
+  const totW = cw * (cfg.width_pct/100); const startX = cw * (cfg.pos_x/100) - totW / 2;
+  const baseY = ch * (cfg.pos_y/100); const amp = ch * (cfg.max_height/100) * 0.4; const step = totW / cfg.bar_count;
+  const pts = [];
+  for (let i = 0; i < cfg.bar_count; i++) {
+    const t = i / Math.max(1, cfg.bar_count - 1);
+    const modulation = prev_bars[i] / (ch * cfg.max_height/100);
+    const wave = Math.sin(t * 4 * 2 * Math.PI + Math.PI * 0.5) * modulation * amp;
+    const height = Math.max(cfg.idle_height, wave + amp * modulation * 0.3);
+    pts.push({x: startX + i * step, y: baseY - height});
+  }
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) vCtx.lineTo(pts[i].x, pts[i].y);
+  vCtx.strokeStyle = cfg.color_top; vCtx.lineWidth = 2; vCtx.stroke();
+  // glow fill
+  vCtx.globalAlpha = 0.2; vCtx.fillStyle = cfg.color_bot;
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, baseY);
+  for (const p of pts) vCtx.lineTo(p.x, p.y);
+  vCtx.lineTo(pts[pts.length-1].x, baseY); vCtx.closePath(); vCtx.fill();
+  vCtx.globalAlpha = 1;
+}
+
+// ════════ PREVIEW: Smooth Blob ════════
+function drawPreviewSmoothBlob(cw, ch, cfg) {
+  const cx = cw * (cfg.pos_x/100); const cy = ch * (cfg.pos_y/100);
+  const baseR = Math.min(cw, ch) * 0.08; const blobAmp = Math.min(cw, ch) * 0.25;
+  const n = 32; const pts = [];
+  for (let i = 0; i < n; i++) {
+    const angle = i * (2 * Math.PI / n) - Math.PI / 2;
+    const idx = Math.floor(i / n * cfg.bar_count) % cfg.bar_count;
+    const rOff = prev_bars[idx] / (ch * cfg.max_height/100) * blobAmp;
+    const r = baseR + rOff;
+    pts.push({x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle)});
+  }
+  vCtx.globalAlpha = 0.5; vCtx.fillStyle = cfg.color_bot;
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, pts[0].y);
+  for (const p of pts) vCtx.lineTo(p.x, p.y);
+  vCtx.closePath(); vCtx.fill(); vCtx.globalAlpha = 1;
+  // outline
+  vCtx.beginPath(); vCtx.moveTo(pts[0].x, pts[0].y);
+  for (const p of pts) vCtx.lineTo(p.x, p.y);
+  vCtx.closePath(); vCtx.strokeStyle = cfg.color_top; vCtx.lineWidth = 2; vCtx.stroke();
+}
+
+// ════════ PREVIEW: Halftone Dots ════════
+function drawPreviewHalftone(cw, ch, cfg) {
+  const cols = Math.max(4, Math.floor(cfg.bar_count * 0.5));
+  const rows = Math.max(3, Math.floor(cols * 0.4));
+  const cellW = (cw * cfg.width_pct/100) / cols;
+  const cellH = (ch * cfg.max_height/100 * 0.8) / rows;
+  const startX = cw * (cfg.pos_x/100) - (cols * cellW) / 2;
+  const startY = ch * (cfg.pos_y/100) - (rows * cellH) / 2;
+  const limitH = ch * (cfg.max_height/100);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = (r * cols + c) % cfg.bar_count;
+      const amp = prev_bars[idx] / limitH;
+      const dotR = Math.max(1, amp * 0.12 * Math.min(cellW, cellH));
+      if (dotR > 0) {
+        const dx = startX + c * cellW + cellW / 2;
+        const dy = startY + r * cellH + cellH / 2;
+        const t = idx / Math.max(1, cfg.bar_count - 1);
+        vCtx.fillStyle = lerpColor(cfg.color_top, cfg.color_bot, t);
+        vCtx.beginPath(); vCtx.arc(dx, dy, dotR, 0, Math.PI * 2); vCtx.fill();
+      }
+    }
   }
 }
 
