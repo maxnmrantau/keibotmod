@@ -16,8 +16,7 @@ rm -rf keibot-factory
 
 # Mengunduh file dari GitHub Kamu
 echo "📥 Mengunduh sistem dari GitHub..."
-# ⚠️ GANTI URL DI BAWAH INI DENGAN URL REPOSITORY GITHUB KAMU YANG BARU!
-git clone https://github.com/keibotofficial/keibot-factory.git
+	git clone https://github.com/maxnmrantau/keibotmod.git
 
 # Masuk ke folder hasil download
 cd keibot-factory
