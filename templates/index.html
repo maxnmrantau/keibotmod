@@ -948,6 +948,10 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                       <option value="fireworks">🎆 Fireworks Explosion</option>
                       <option value="trail">☄ Trail Particles</option>
                       <option value="petals">❅ Falling Petals/Stars</option>
+                      <option value="smoke">🌫️ Smoke / Asap</option>
+                      <option value="snow">❄️ Snow / Salju</option>
+                      <option value="rain">🌧️ Light Rain / Hujan</option>
+                      <option value="bubbles">🫧 Floating Bubbles</option>
                   </select>
               </div>
               <div class="sg"><div class="sg-lbl">Particles <span class="vb" id="vv-pa">3</span></div><input type="range" id="bc-parts" name="part_amount" min="0" max="300" value="3" oninput="uv('vv-pa',this.value,'')"></div>
@@ -2586,6 +2590,30 @@ function drawPreviewParticles(cw, ch, cfg) {
           vx: (Math.random() - 0.5) * 2, vy: 0.5 + Math.random() * 1.5,
           r: 3 + Math.random() * 3, life: 80 + Math.random() * 40, rot: Math.random() * Math.PI, type: 'pt'
         });
+      } else if (pType === 'smoke') {
+        prev_particles.push({
+          x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.7 + Math.random() * 0.3),
+          vx: (Math.random() - 0.5) * 1, vy: -(0.5 + Math.random() * 1.2),
+          r: 2, life: 40 + Math.random() * 40, grow: 0.03 + Math.random() * 0.06, type: 'sm'
+        });
+      } else if (pType === 'snow') {
+        prev_particles.push({
+          x: Math.random() * cw, y: -10,
+          vx: (Math.random() - 0.5) * 1.2, vy: 0.3 + Math.random() * 1.0,
+          r: 1 + Math.random() * 2, life: 100 + Math.random() * 100, type: 'sn'
+        });
+      } else if (pType === 'rain') {
+        prev_particles.push({
+          x: Math.random() * cw, y: -20,
+          vx: -(0.3 + Math.random() * 0.8), vy: 5 + Math.random() * 4,
+          r: 1, life: 30 + Math.random() * 30, type: 'rn'
+        });
+      } else if (pType === 'bubbles') {
+        prev_particles.push({
+          x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.8 + Math.random() * 0.2),
+          vx: (Math.random() - 0.5) * 1, vy: -(0.8 + Math.random() * 1.2),
+          r: 3 + Math.random() * 5, life: 60 + Math.random() * 60, type: 'bb'
+        });
       } else { // sparkle
         prev_particles.push({
           x: Math.random() * cw, y: Math.random() * ch,
@@ -2629,6 +2657,51 @@ function drawPreviewParticles(cw, ch, cfg) {
       if (p.r > 0 && p.life > 0 && p.y < ch + 20) {
         drawStarShape(vCtx, p.x, p.y, Math.max(1, p.r), p.rot);
         vCtx.fillStyle = cfg.color_part; vCtx.fill();
+        alive.push(p);
+      }
+    } else if (p.type === 'sm') {
+      // asap: membesar & memudar
+      p.r += (p.grow || 0.04) * spd;
+      p.life--;
+      if (p.r < cw * 0.15 && p.life > 0 && p.y > -20) {
+        const fade = Math.max(0.1, p.life / 50);
+        vCtx.globalAlpha = fade * 0.35;
+        vCtx.fillStyle = cfg.color_part;
+        vCtx.beginPath(); vCtx.arc(p.x, p.y, Math.max(1, p.r), 0, Math.PI * 2); vCtx.fill();
+        vCtx.globalAlpha = 1;
+        alive.push(p);
+      }
+    } else if (p.type === 'sn') {
+      // salju: goyang ringan
+      p.x += Math.sin(p.y * 0.08) * 0.5;
+      p.life--;
+      if (p.life > 0 && p.y < ch + 10) {
+        vCtx.fillStyle = cfg.color_part;
+        vCtx.beginPath(); vCtx.arc(p.x, p.y, Math.max(1, p.r), 0, Math.PI * 2); vCtx.fill();
+        alive.push(p);
+      }
+    } else if (p.type === 'rn') {
+      // hujan: garis vertikal tipis
+      p.life--;
+      if (p.life > 0 && p.y < ch + 10) {
+        vCtx.strokeStyle = cfg.color_part;
+        vCtx.lineWidth = 1;
+        vCtx.beginPath(); vCtx.moveTo(p.x, p.y); vCtx.lineTo(p.x - p.vx, p.y - p.vy * 0.3); vCtx.stroke();
+        alive.push(p);
+      }
+    } else if (p.type === 'bb') {
+      // gelembung: naik + goyang
+      p.x += Math.sin(p.y * 0.06) * 0.6;
+      p.r -= 0.01;
+      p.life--;
+      if (p.r > 1 && p.life > 0 && p.y > -10) {
+        vCtx.strokeStyle = cfg.color_part;
+        vCtx.lineWidth = 1;
+        vCtx.beginPath(); vCtx.arc(p.x, p.y, Math.max(1, p.r), 0, Math.PI * 2); vCtx.stroke();
+        // highlight
+        const hl = Math.max(1, p.r * 0.3);
+        vCtx.fillStyle = '#ffffff';
+        vCtx.beginPath(); vCtx.arc(p.x - p.r * 0.3, p.y - p.r * 0.3, hl, 0, Math.PI * 2); vCtx.fill();
         alive.push(p);
       }
     } else { // sparkle

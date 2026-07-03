@@ -716,25 +716,50 @@ class VisualEngine:
         if is_hit and vol > 1.5:
             for _ in range(p_amt):
                 if p_type == 'fireworks':
-                    # meledak dari tengah bawah dengan kecepatan radial tinggi
                     self.particles.append([
                         np.random.randint(w*0.3, w*0.7), np.random.randint(h*0.6, h*0.9),
                         np.random.uniform(-6, 6), np.random.uniform(-8, -2),
                         np.random.randint(2, 5), np.random.randint(30, 60), 0, 'fw'
                     ])
                 elif p_type == 'trail':
-                    # partikel cepat dengan trail, spawn random
                     self.particles.append([
                         np.random.randint(0, w), np.random.randint(0, h//2),
                         np.random.uniform(-4, 4), np.random.uniform(2, 6),
                         np.random.randint(2, 4), np.random.randint(40, 70), 0, 'tr'
                     ])
                 elif p_type == 'petals':
-                    # bintang/kelopak jatuh dari atas perlahan
                     self.particles.append([
                         np.random.randint(0, w), -10,
                         np.random.uniform(-1, 1), np.random.uniform(0.5, 2),
                         np.random.randint(3, 6), np.random.randint(80, 120), np.random.uniform(0, math.pi), 'pt'
+                    ])
+                elif p_type == 'smoke':
+                    # asap: dari dasar, naik perlahan, membesar, memudar
+                    self.particles.append([
+                        np.random.randint(w*0.1, w*0.9), np.random.randint(h*0.7, h),
+                        np.random.uniform(-0.5, 0.5), np.random.uniform(-1.5, -0.3),
+                        2, np.random.randint(40, 80), np.random.uniform(0.02, 0.08), 'sm'
+                    ])
+                elif p_type == 'snow':
+                    # salju: dari atas, turun perlahan, goyang
+                    self.particles.append([
+                        np.random.randint(0, w), -10,
+                        np.random.uniform(-0.8, 0.8), np.random.uniform(0.3, 1.2),
+                        np.random.randint(1, 3), np.random.randint(100, 200), 0, 'sn'
+                    ])
+                elif p_type == 'rain':
+                    # hujan: garis tipis dari atas, cepat, miring sedikit
+                    self.particles.append([
+                        np.random.randint(0, w), -20,
+                        np.random.uniform(-1.5, -0.3), np.random.uniform(5, 9),
+                        np.random.randint(1, 2), np.random.randint(30, 60), 0, 'rn'
+                    ])
+                elif p_type == 'bubbles':
+                    # gelembung: dari dasar, naik, goyang, border transparan
+                    self.particles.append([
+                        np.random.randint(w*0.1, w*0.9), np.random.randint(h*0.8, h),
+                        np.random.uniform(-0.6, 0.6), np.random.uniform(-1.8, -0.5),
+                        np.random.randint(3, 8), np.random.randint(60, 120), 0, 'bb'
                     ])
                 else:  # sparkle (default)
                     self.particles.append([
@@ -746,7 +771,6 @@ class VisualEngine:
         alive = []
         spd = 1.0 + (vol * 0.1 * p_spd)
         for p in self.particles:
-            # unpack (format fleksibel: [x, y, vx, vy, radius, life, extra, type])
             x, y, vx, vy = p[0], p[1], p[2], p[3]
             radius = p[4]
             life = p[5] if len(p) > 5 else 0
@@ -756,7 +780,6 @@ class VisualEngine:
             x += vx * spd; y += vy * spd
 
             if ptype == 'fw':
-                # fireworks: gravitasi + shrink
                 vy += 0.25 * spd
                 radius -= 0.05
                 life -= 1
@@ -764,24 +787,56 @@ class VisualEngine:
                     cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'tr':
-                # trail: cepat, tinggalkan jejak blur
                 radius -= 0.03
                 life -= 1
                 if radius > 0 and life > 0:
-                    # core
                     cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_top, -1)
-                    # trail
                     cv2.line(frame, (int(x), int(y)), (int(x - vx*2), int(y - vy*2)), self.col_part, 1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'pt':
-                # petals: jatuh perlahan + goyang, rotasi
-                x += math.sin(y * 0.05) * 0.8  # goyang horizontal
+                x += math.sin(y * 0.05) * 0.8
                 radius -= 0.005
                 life -= 1
                 extra += 0.08
                 if radius > 0 and life > 0 and y < h + 20:
-                    # gambar bintang 5-kelopak
                     self._draw_star(frame, int(x), int(y), max(1, int(radius)), extra, self.col_part)
+                    alive.append([x, y, vx, vy, radius, life, extra, ptype])
+            elif ptype == 'sm':
+                # smoke: membesar & memudar
+                radius += extra * spd
+                life -= 1
+                if radius < 80 and life > 0 and y > -20:
+                    # semakin besar semakin transparan — simulasi alpha dengan warna lebih gelap
+                    fade = max(0.1, life / 60)
+                    intensity = int(255 * fade * 0.4)
+                    col = (intensity, intensity, intensity)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), col, -1)
+                    alive.append([x, y, vx, vy, radius, life, extra, ptype])
+            elif ptype == 'sn':
+                # snow: goyang ringan
+                x += math.sin(y * 0.08) * 0.5
+                life -= 1
+                if life > 0 and y < h + 10:
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, -1)
+                    alive.append([x, y, vx, vy, radius, life, extra, ptype])
+            elif ptype == 'rn':
+                # rain: garis vertikal tipis
+                life -= 1
+                if life > 0 and y < h + 10:
+                    cv2.line(frame, (int(x), int(y)), (int(x - vx), int(y - vy*0.3)), self.col_part, 1)
+                    alive.append([x, y, vx, vy, radius, life, extra, ptype])
+            elif ptype == 'bb':
+                # bubbles: naik + goyang, border putih dengan fill transparan
+                x += math.sin(y * 0.06) * 0.6
+                radius -= 0.01
+                life -= 1
+                if radius > 1 and life > 0 and y > -10:
+                    # fill transparent (mix with bg - we use thin outline instead)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, 1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)-1), self.col_part, -1)
+                    # highlight spot di pojok
+                    hs = max(1, int(radius * 0.3))
+                    cv2.circle(frame, (int(x) - int(radius*0.3), int(y) - int(radius*0.3)), hs, (255, 255, 255), -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             else:
                 # sparkle default
