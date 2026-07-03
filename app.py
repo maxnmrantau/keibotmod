@@ -964,14 +964,14 @@ class VisualEngine:
                     self.particles.append([
                         np.random.randint(0, w), -10,
                         np.random.uniform(-0.8, 0.8), np.random.uniform(0.3, 1.2),
-                        np.random.randint(1, 3), np.random.randint(100, 200), 0, 'sn'
+                        np.random.randint(1, 3), int((h + 20) / (0.3 + random.uniform(0.3, 1.2))) + 30, 0, 'sn'
                     ])
                 elif p_type == 'rain':
                     # hujan: garis tipis dari atas, cepat, miring sedikit
                     self.particles.append([
                         np.random.randint(0, w), -20,
                         np.random.uniform(-1.5, -0.3), np.random.uniform(5, 9),
-                        np.random.randint(1, 2), np.random.randint(30, 60), 0, 'rn'
+                        np.random.randint(1, 2), int((h + 40) / (5 + random.uniform(0, 4))) + 15, 0, 'rn'
                     ])
                 elif p_type == 'bubbles':
                     # gelembung: dari dasar, naik, goyang, border transparan
@@ -1256,6 +1256,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     wm_pos = cfg.get('wm_position', 'bl')
                     wm_move = cfg.get('wm_move', 'none')
                     wm_font = cfg.get('wm_font', 'M')
+                    wm_speed = cfg.get('wm_speed', 'medium')
 
                     # font mapping
                     font_map = {
@@ -1292,11 +1293,23 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         bx = int(offset)
                     elif wm_move == 'pulse':
                         pulse = 0.7 + 0.3 * abs(math.sin(frame_sec * 2.5))
-                    elif wm_move == 'random':
-                        # ganti posisi setiap 2 detik
-                        phase = int(frame_sec / 2) * 137  # seed acak
-                        bx = int((math.sin(phase) * 0.5 + 0.5) * (w - tw - margin * 2) + margin)
-                        by = int((math.cos(phase * 1.3) * 0.5 + 0.5) * (h - th - margin * 2) + margin + th)
+                    elif wm_move == 'random_walk':
+                        # random walk kontinu
+                        if not hasattr(self, '_wm_state'):
+                            self._wm_state = {'x': float(bx), 'y': float(by), 'dx': 1.5, 'dy': 1.2}
+                        ws = self._wm_state
+                        wm_spd_mult = {'slow': 0.5, 'fast': 2.5}.get(wm_speed, 1.2)
+                        # update arah gradual
+                        if random.random() < 0.015:
+                            a = random.random() * 2 * math.pi
+                            ws['dx'] += (math.cos(a) * wm_spd_mult - ws['dx']) * 0.1
+                            ws['dy'] += (math.sin(a) * wm_spd_mult - ws['dy']) * 0.1
+                        ws['x'] += ws['dx']; ws['y'] += ws['dy']
+                        # pantul di tepi
+                        for side, limit, key in [(margin, w - tw - margin, 'x'), (margin + th, h - margin, 'y')]:
+                            if ws[key] < side: ws[key] = side; (ws['dx'], ws['dy']) = (-ws['dx'], ws['dy']) if key == 'x' else (ws['dx'], -ws['dy'])
+                            if ws[key] > limit: ws[key] = limit; (ws['dx'], ws['dy']) = (-ws['dx'], ws['dy']) if key == 'x' else (ws['dx'], -ws['dy'])
+                        bx = int(ws['x']); by = int(ws['y'])
                         pulse = 1.0
                     else:
                         pulse = 1.0
@@ -1446,7 +1459,8 @@ def background_worker():
             # ── SMART CUT: potong & acak ulang chunk video ──
             smart_cut = task.get('smart_cut', False)
             cut_duration = float(task.get('cut_duration', 5))
-            cut_remainder = task.get('cut_remainder', 'end')  # 'middle' atau 'end'
+            cut_remainder = task.get('cut_remainder', 'end')
+            cut_use_remainder = task.get('cut_use_remainder', True)
             if smart_cut and cut_duration > 0 and base_duration_sec > cut_duration:
                 with db_lock:
                     for d in active_tasks:
@@ -1484,8 +1498,8 @@ def background_worker():
                         for ch in chunks:
                             f.write(f"file '{os.path.abspath(ch).replace(chr(92), '/')}'\n")
 
-                    # sisipkan remainder
-                    if remainder > 0.5:
+                    # sisipkan remainder (jika diaktifkan)
+                    if cut_use_remainder and remainder > 0.5:
                         # ekstrak remainder dari base_video
                         rem_video = os.path.join(BASE_UPLOAD, f"rem_{task_id}.mp4")
                         subprocess.run([
@@ -1499,6 +1513,12 @@ def background_worker():
                             lines = open(smart_txt).readlines()
                             mid = len(lines) // 2
                             lines.insert(mid, f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
+                            with open(smart_txt, 'w') as f: f.writelines(lines)
+                        elif cut_remainder == 'random':
+                            # sisipkan di posisi acak
+                            lines = open(smart_txt).readlines()
+                            pos = random.randint(0, len(lines))
+                            lines.insert(pos, f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
                             with open(smart_txt, 'w') as f: f.writelines(lines)
                         else:
                             # end - tambah di akhir
@@ -2120,7 +2140,8 @@ def batch_create():
             "use_floating_card": data.get('use_floating_card', False),
             "smart_cut": data.get('smart_cut', False),
             "cut_duration": data.get('cut_duration', 5),
-            "cut_remainder": data.get('cut_remainder', 'end')
+            "cut_remainder": data.get('cut_remainder', 'end'),
+            "cut_use_remainder": data.get('cut_use_remainder', True)
         }
         with db_lock:
             active_tasks.append({"id": t_id, "title": blueprint['title'], "time": blueprint['publish_date'], "status": "In Factory Queue ⚙️", "type": "📺 VOD"})

@@ -699,7 +699,12 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <select id="bc-cut-remainder" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
                   <option value="end">Akhir video</option>
                   <option value="middle">Tengah video</option>
+                  <option value="random">🎲 Random acak</option>
                 </select>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:4px;">
+                  <input type="checkbox" id="bc-cut-use-remainder" checked style="width:14px;height:14px;accent-color:var(--accent);">
+                  <span style="font-size:10px;font-weight:600;">Pakai sisa potongan</span>
+                </label>
               </div>
             </div>
           </div>
@@ -879,13 +884,21 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="br">↘ Kanan Bawah</option>
                 <option value="center">⊗ Tengah</option>
               </select>
-              <select id="bc-wm-move" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+              <select id="bc-wm-move" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);" onchange="document.getElementById('wm-speed-wrap').style.display=this.value==='random_walk'?'inline-flex':'none'">
                 <option value="none">⏸ Statis</option>
                 <option value="float">↕ Naik-Turun</option>
                 <option value="scroll">→ Meluncur</option>
                 <option value="pulse">◐ Berdenyut</option>
-                <option value="random">🎲 Random Acak</option>
+                <option value="random_walk">🎲 Random Walk</option>
               </select>
+              <span id="wm-speed-wrap" style="display:none;align-items:center;gap:4px;">
+                <span style="font-size:10px;color:var(--muted);font-weight:600;">Speed:</span>
+                <select id="bc-wm-speed" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="slow">🐢 Slow</option>
+                  <option value="medium" selected>🚶 Medium</option>
+                  <option value="fast">🏃 Fast</option>
+                </select>
+              </span>
             </div>
           </div>
 
@@ -968,7 +981,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               <div class="sg"><div class="sg-lbl">Bar Gap <span class="vb" id="vv-sp">3px</span></div><input type="range" id="bc-gap" name="spacing" min="0" max="20" value="3" oninput="uv('vv-sp',this.value,'px')"></div>
               <div class="sg" style="display:flex; flex-direction:column; gap:8px;">
                   <div class="sg-lbl">✨ Particle Style</div>
-                  <select id="bc-particle-type" style="width:100%;font-size:11px;padding:4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
+                  <select id="bc-particle-type" style="width:100%;font-size:11px;padding:4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);" onchange="prev_particles=[]">
                       <option value="sparkle">✦ Sparkle (default)</option>
                       <option value="fireworks">🎆 Fireworks Explosion</option>
                       <option value="trail">☄ Trail Particles</option>
@@ -981,7 +994,18 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </div>
               <div class="sg"><div class="sg-lbl">Particles <span class="vb" id="vv-pa">3</span></div><input type="range" id="bc-parts" name="part_amount" min="0" max="300" value="3" oninput="uv('vv-pa',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Part Speed <span class="vb" id="vv-ps">1.0x</span></div><input type="range" id="bc-pspd" name="part_speed" min="0.1" max="5.0" step="0.1" value="1.0" oninput="uv('vv-ps',this.value,'x')"></div>
-              <div class="sg"><div class="sg-lbl">Fade Transisi <span class="vb" id="vv-fade">0s</span></div><input type="range" id="bc-fade" name="fade_duration" min="0" max="5" step="0.5" value="0" oninput="uv('vv-fade',this.value,'s'); document.getElementById('bc-fade-val').textContent = this.value > 0 ? this.value+'s' : 'Mati'"><small style="color:var(--muted);font-size:9px;font-weight:600;display:block;margin-top:4px;">Fade to black di awal & akhir (⚫ <span id="bc-fade-val">Mati</span>)</small></div>
+            </div>
+            <!-- ════════ TRANSISI VIDEO ════════ -->
+            <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">🎬 Transisi Video</span>
+                <span id="bc-fade-val" style="font-size:10px;font-weight:700;color:var(--accent);">Mati</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Fade to Black</span>
+                <input type="range" id="bc-fade" name="fade_duration" min="0" max="5" step="0.5" value="0" style="flex:1;" oninput="uv('vv-fade',this.value,'s'); document.getElementById('bc-fade-val').textContent = this.value > 0 ? this.value+'s' : 'Mati'">
+                <span style="font-size:10px;color:var(--muted);font-weight:600;min-width:50px;text-align:right;"><span id="vv-fade">0</span>s</span>
+              </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:12px; align-items:center;">
               <button type="button" class="btn btn-g btn-sm" onclick="saveVisPreset()">💾 Simpan Preset</button>
@@ -1914,7 +1938,8 @@ function processBatch() {
     use_floating_card: is_floating,
     smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
     cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
-    cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end'
+    cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end',
+    cut_use_remainder: document.getElementById('bc-cut-use-remainder') ? document.getElementById('bc-cut-use-remainder').checked : true
   };
 
   fetch('/api/batch_create', {
@@ -1972,6 +1997,7 @@ function getVisConfig() {
     wm_size: document.getElementById('bc-wm-size') ? parseInt(document.getElementById('bc-wm-size').value) : 24,
     wm_position: document.getElementById('bc-wm-position') ? document.getElementById('bc-wm-position').value : 'bl',
     wm_move: document.getElementById('bc-wm-move') ? document.getElementById('bc-wm-move').value : 'none',
+    wm_speed: document.getElementById('bc-wm-speed') ? document.getElementById('bc-wm-speed').value : 'medium',
     // tracklist
     use_tracklist: document.getElementById('bc-use-tracklist') ? document.getElementById('bc-use-tracklist').checked : false,
     tl_font: document.getElementById('bc-tl-font') ? document.getElementById('bc-tl-font').value : 'M',
@@ -2060,6 +2086,8 @@ function loadVisPreset(name) {
     const key = id.replace('bc-wm-', 'wm_');
     if (el && p[key]) el.value = p[key];
   });
+  const wmSpd = document.getElementById('bc-wm-speed');
+  if (wmSpd && p.wm_speed) wmSpd.value = p.wm_speed;
 }
 
 function exportVisPreset() {
@@ -2290,6 +2318,7 @@ function drawLivePreview() {
       let wx = cw/2, wy = ch - 40;
       const wmMove = cfg.wm_move || 'none';
       const wmPos = cfg.wm_position || 'bl';
+      const wmSpeed = cfg.wm_speed || 'medium';
 
       // posisi dasar
       const margin = 20;
@@ -2302,9 +2331,12 @@ function drawLivePreview() {
       else if (wmPos === 'tr') { wx = cw - margin - wmW/2; wy = margin + wmH/2; }
       else if (wmPos === 'bl') { wx = margin + wmW/2; wy = ch - margin; }
       else if (wmPos === 'br') { wx = cw - margin - wmW/2; wy = ch - margin; }
-      else { wx = cw/2; wy = ch/2; } // center
+      else { wx = cw/2; wy = ch/2; }
 
       // movement
+      if (!window._wmState) window._wmState = {x: 0, y: 0, dx: 1.5, dy: 1.2};
+      const st = window._wmState;
+
       let s = 1;
       if (wmMove === 'float') {
         wy += Math.sin(timeTick * 0.04) * 15;
@@ -2313,12 +2345,30 @@ function drawLivePreview() {
         wx = ((timeTick * 3) % range) - wmW/2 - margin;
       } else if (wmMove === 'pulse') {
         s = 0.7 + 0.3 * Math.abs(Math.sin(timeTick * 0.05));
-      } else if (wmMove === 'random') {
-        const seed = Math.floor(timeTick / 90) * 91;
-        const rx = (Math.sin(seed + 1) * 0.5 + 0.5) * (cw - wmW - margin * 2) + margin;
-        const ry = (Math.sin(seed + 2) * 0.5 + 0.5) * (ch - wmH - margin * 2) + margin;
-        wx = rx + wmW/2;
-        wy = ry + wmH/2;
+      } else if (wmMove === 'random_walk') {
+        // random walk kontinu — berubah arah pelan-pelan
+        if (!this._rwInit) {
+          st.x = wx; st.y = wy;
+          const angle = Math.random() * Math.PI * 2;
+          const spd = wmSpeed === 'slow' ? 0.5 : wmSpeed === 'fast' ? 2.5 : 1.2;
+          st.dx = Math.cos(angle) * spd;
+          st.dy = Math.sin(angle) * spd;
+          this._rwInit = true;
+        }
+        // update arah secara gradual
+        if (timeTick % 60 === 0 || Math.random() < 0.02) {
+          const a = Math.random() * Math.PI * 2;
+          const spd = wmSpeed === 'slow' ? 0.5 : wmSpeed === 'fast' ? 2.5 : 1.2;
+          st.dx += (Math.cos(a) * spd - st.dx) * 0.1;
+          st.dy += (Math.sin(a) * spd - st.dy) * 0.1;
+        }
+        st.x += st.dx; st.y += st.dy;
+        // pantul di tepi
+        if (st.x < margin) { st.x = margin; st.dx = -st.dx; }
+        if (st.x > cw - margin) { st.x = cw - margin; st.dx = -st.dx; }
+        if (st.y < margin) { st.y = margin; st.dy = -st.dy; }
+        if (st.y > ch - margin) { st.y = ch - margin; st.dy = -st.dy; }
+        wx = st.x; wy = st.y;
       }
 
       vCtx.save();
@@ -2795,19 +2845,25 @@ function drawPreviewParticles(cw, ch, cfg) {
         prev_particles.push({
           x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.7 + Math.random() * 0.3),
           vx: (Math.random() - 0.5) * 1, vy: -(0.5 + Math.random() * 1.2),
-          r: 2, life: 40 + Math.random() * 40, grow: 0.03 + Math.random() * 0.06, type: 'sm'
+          r: 2, life: 60 + Math.random() * 60, grow: 0.03 + Math.random() * 0.06, type: 'sm'
         });
       } else if (pType === 'snow') {
         prev_particles.push({
           x: Math.random() * cw, y: -10,
           vx: (Math.random() - 0.5) * 1.2, vy: 0.3 + Math.random() * 1.0,
-          r: 1 + Math.random() * 2, life: 100 + Math.random() * 100, type: 'sn'
+          r: 1 + Math.random() * 2, life: Math.ceil((ch + 20) / (0.3 + Math.random() * 1.0)) + 30, type: 'sn'
         });
       } else if (pType === 'rain') {
         prev_particles.push({
           x: Math.random() * cw, y: -20,
           vx: -(0.3 + Math.random() * 0.8), vy: 5 + Math.random() * 4,
-          r: 1, life: 30 + Math.random() * 30, type: 'rn'
+          r: 1, life: Math.ceil((ch + 40) / (5 + Math.random() * 4)) + 15, type: 'rn'
+        });
+      } else if (pType === 'bubbles') {
+        prev_particles.push({
+          x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.8 + Math.random() * 0.2),
+          vx: (Math.random() - 0.5) * 1, vy: -(0.8 + Math.random() * 1.2),
+          r: 3 + Math.random() * 5, life: 60 + Math.random() * 60, type: 'bb'
         });
       } else if (pType === 'bubbles') {
         prev_particles.push({
