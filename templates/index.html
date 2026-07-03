@@ -995,6 +995,44 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               <div class="sg"><div class="sg-lbl">Particles <span class="vb" id="vv-pa">3</span></div><input type="range" id="bc-parts" name="part_amount" min="0" max="300" value="3" oninput="uv('vv-pa',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Part Speed <span class="vb" id="vv-ps">1.0x</span></div><input type="range" id="bc-pspd" name="part_speed" min="0.1" max="5.0" step="0.1" value="1.0" oninput="uv('vv-ps',this.value,'x')"></div>
             </div>
+            <!-- ════════ PARTICLE SETTINGS ════════ -->
+            <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Ukuran</span>
+                  <select id="bc-part-size" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="small">Kecil</option>
+                    <option value="medium" selected>Sedang</option>
+                    <option value="large">Besar</option>
+                  </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Umur</span>
+                  <select id="bc-part-life" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="short">Pendek</option>
+                    <option value="medium" selected>Sedang</option>
+                    <option value="long">Panjang</option>
+                  </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Opacity</span>
+                  <select id="bc-part-opacity" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="0.3">30%</option>
+                    <option value="0.5">50%</option>
+                    <option value="0.7">70%</option>
+                    <option value="1.0" selected>100%</option>
+                  </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Kepadatan</span>
+                  <select id="bc-part-density" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="low">Rendah</option>
+                    <option value="medium" selected>Sedang</option>
+                    <option value="high">Tinggi</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <!-- ════════ TRANSISI VIDEO ════════ -->
             <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
@@ -1985,6 +2023,10 @@ function getVisConfig() {
     spacing: document.getElementById('bc-gap') ? parseInt(document.getElementById('bc-gap').value) : 3,
     part_amount: document.getElementById('bc-parts') ? parseInt(document.getElementById('bc-parts').value) : 3,
     part_speed: document.getElementById('bc-pspd') ? parseFloat(document.getElementById('bc-pspd').value) : 1.0,
+    part_size: document.getElementById('bc-part-size') ? document.getElementById('bc-part-size').value : 'medium',
+    part_life: document.getElementById('bc-part-life') ? document.getElementById('bc-part-life').value : 'medium',
+    part_opacity: document.getElementById('bc-part-opacity') ? parseFloat(document.getElementById('bc-part-opacity').value) : 1.0,
+    part_density: document.getElementById('bc-part-density') ? document.getElementById('bc-part-density').value : 'medium',
     effect_type: document.getElementById('bc-effect-type') ? document.getElementById('bc-effect-type').value : 'spectrum',
     use_beat_pulse: document.getElementById('bc-use-beat-pulse') ? document.getElementById('bc-use-beat-pulse').checked : false,
     particle_type: document.getElementById('bc-particle-type') ? document.getElementById('bc-particle-type').value : 'sparkle',
@@ -2034,6 +2076,11 @@ function loadVisPreset(name) {
   // particle style
   const ptEl = document.getElementById('bc-particle-type');
   if (ptEl && p.particle_type) ptEl.value = p.particle_type;
+  ['bc-part-size', 'bc-part-life', 'bc-part-opacity', 'bc-part-density'].forEach(id => {
+    const el = document.getElementById(id);
+    const key = 'part_' + id.split('-')[2];
+    if (el && p[key] !== undefined) el.value = p[key];
+  });
 
   const map = [
     ['bc-pos-x',  'vv-px', '%'], ['bc-pos-y',  'vv-py', '%'], ['bc-width',  'vv-wp', '%'], ['bc-maxh',   'vv-mh', '%'],
@@ -2819,63 +2866,63 @@ function drawPreviewParticles(cw, ch, cfg) {
   const beatSim = Math.abs(Math.sin(timeTick / 12)) * Math.sin(timeTick / 20);
   const isBeat = beatSim > 0.7;
 
+  // particle settings
+  const partSizeMult = cfg.part_size === 'small' ? 0.6 : cfg.part_size === 'large' ? 1.5 : 1.0;
+  const partLifeMult = cfg.part_life === 'short' ? 0.5 : cfg.part_life === 'long' ? 1.8 : 1.0;
+  const partAlpha = cfg.part_opacity !== undefined ? parseFloat(cfg.part_opacity) : 1.0;
+  const partDensityMult = cfg.part_density === 'low' ? 0.5 : cfg.part_density === 'high' ? 1.8 : 1.0;
+
   // spawn saat beat simulasi
   if (isBeat && cfg.part_amount > 0) {
-    const spawnCount = Math.min(cfg.part_amount, 8);
+    const spawnCount = Math.min(Math.ceil(cfg.part_amount * partDensityMult), 12);
     for (let s = 0; s < spawnCount; s++) {
       if (pType === 'fireworks') {
         prev_particles.push({
           x: cw * (0.3 + Math.random() * 0.4), y: ch * (0.6 + Math.random() * 0.3),
           vx: (Math.random() - 0.5) * 8, vy: -(Math.random() * 6 + 2),
-          r: 2 + Math.random() * 3, life: 30 + Math.random() * 30, type: 'fw'
+          r: (2 + Math.random() * 3) * partSizeMult, life: (30 + Math.random() * 30) * partLifeMult, type: 'fw'
         });
       } else if (pType === 'trail') {
         prev_particles.push({
           x: Math.random() * cw, y: Math.random() * ch * 0.5,
           vx: (Math.random() - 0.5) * 5, vy: 2 + Math.random() * 4,
-          r: 2 + Math.random() * 2, life: 40 + Math.random() * 30, type: 'tr'
+          r: (2 + Math.random() * 2) * partSizeMult, life: (40 + Math.random() * 30) * partLifeMult, type: 'tr'
         });
       } else if (pType === 'petals') {
         prev_particles.push({
           x: Math.random() * cw, y: -10,
           vx: (Math.random() - 0.5) * 2, vy: 0.5 + Math.random() * 1.5,
-          r: 3 + Math.random() * 3, life: 80 + Math.random() * 40, rot: Math.random() * Math.PI, type: 'pt'
+          r: (3 + Math.random() * 3) * partSizeMult, life: (80 + Math.random() * 40) * partLifeMult, rot: Math.random() * Math.PI, type: 'pt'
         });
       } else if (pType === 'smoke') {
         prev_particles.push({
           x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.7 + Math.random() * 0.3),
           vx: (Math.random() - 0.5) * 1, vy: -(0.5 + Math.random() * 1.2),
-          r: 2, life: 60 + Math.random() * 60, grow: 0.03 + Math.random() * 0.06, type: 'sm'
+          r: 2 * partSizeMult, life: (60 + Math.random() * 60) * partLifeMult, grow: 0.03 + Math.random() * 0.06, type: 'sm'
         });
       } else if (pType === 'snow') {
         prev_particles.push({
           x: Math.random() * cw, y: -10,
           vx: (Math.random() - 0.5) * 1.2, vy: 0.3 + Math.random() * 1.0,
-          r: 1 + Math.random() * 2, life: Math.ceil((ch + 20) / (0.3 + Math.random() * 1.0)) + 30, type: 'sn'
+          r: (1 + Math.random() * 2) * partSizeMult, life: Math.ceil((ch + 20) / (0.3 + Math.random() * 1.0)) * partLifeMult + 20, type: 'sn'
         });
       } else if (pType === 'rain') {
         prev_particles.push({
           x: Math.random() * cw, y: -20,
           vx: -(0.3 + Math.random() * 0.8), vy: 5 + Math.random() * 4,
-          r: 1, life: Math.ceil((ch + 40) / (5 + Math.random() * 4)) + 15, type: 'rn'
+          r: 1 * partSizeMult, life: Math.ceil((ch + 40) / (5 + Math.random() * 4)) * partLifeMult + 10, type: 'rn'
         });
       } else if (pType === 'bubbles') {
         prev_particles.push({
           x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.8 + Math.random() * 0.2),
           vx: (Math.random() - 0.5) * 1, vy: -(0.8 + Math.random() * 1.2),
-          r: 3 + Math.random() * 5, life: 60 + Math.random() * 60, type: 'bb'
-        });
-      } else if (pType === 'bubbles') {
-        prev_particles.push({
-          x: cw * (0.1 + Math.random() * 0.8), y: ch * (0.8 + Math.random() * 0.2),
-          vx: (Math.random() - 0.5) * 1, vy: -(0.8 + Math.random() * 1.2),
-          r: 3 + Math.random() * 5, life: 60 + Math.random() * 60, type: 'bb'
+          r: (3 + Math.random() * 5) * partSizeMult, life: (60 + Math.random() * 60) * partLifeMult, type: 'bb'
         });
       } else { // sparkle
         prev_particles.push({
           x: Math.random() * cw, y: Math.random() * ch,
           vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
-          r: 2 + Math.random() * 4, life: 20 + Math.random() * 20, type: 'sp'
+          r: (2 + Math.random() * 4) * partSizeMult, life: (20 + Math.random() * 20) * partLifeMult, type: 'sp'
         });
       }
     }
@@ -2885,7 +2932,7 @@ function drawPreviewParticles(cw, ch, cfg) {
   const spd = 1.0 + cfg.part_speed * 0.5;
   const alive = [];
   vCtx.fillStyle = cfg.color_part;
-  for (const p of prev_particles) {
+  vCtx.globalAlpha = partAlpha;
     p.x += p.vx * spd; p.y += p.vy * spd;
     p.life--;
 
@@ -2970,9 +3017,10 @@ function drawPreviewParticles(cw, ch, cfg) {
     }
   }
   prev_particles = alive;
+  vCtx.globalAlpha = 1;
 
-  // fallback: jika tidak ada particle aktif, tampilkan sparkle statis lama
-  if (prev_particles.length === 0) {
+  // fallback: hanya untuk sparkle (jika user pilih particle lain, jangan tampilkan fallback)
+  if (prev_particles.length === 0 && (pType === 'sparkle' || pType === undefined)) {
     vCtx.fillStyle = cfg.color_part;
     for (let p = 0; p < Math.min(cfg.part_amount, 30); p++) {
       vCtx.beginPath();
