@@ -1,0 +1,10 @@
+# Keamanan File Rahasia
+config.json
+client_secret.json
+channels_db.json
+tasks_db.json
+
+# Abaikan folder hasil render & cache
+uploads/
+static/final_*.mp4
+__pycache__/
