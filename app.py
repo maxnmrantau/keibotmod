@@ -892,32 +892,64 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         cur_idx = len(cfg['track_schedule']) - 1
 
                 tracks = cfg['track_schedule']
-                max_show = min(len(tracks), 10)
-                item_h = 28
-                pad = 10
-                list_w = 360
-                list_h = max_show * item_h + pad * 2 + 20  # header
-                list_x = w - list_w - 20
-                list_y = 20
+                tl_pos = str(cfg.get('tl_position', 'tr'))
+                tl_size = str(cfg.get('tl_size', 'medium'))
+                tl_bg = str(cfg.get('tl_bg', 'dark'))
+                tl_font = str(cfg.get('tl_font', 'M'))
 
-                # background
+                # size config
+                if tl_size == 'large':
+                    item_h = 32; list_w = 400; font_s = 0.5; header_s = 0.5
+                elif tl_size == 'small':
+                    item_h = 22; list_w = 280; font_s = 0.35; header_s = 0.4
+                else:  # medium
+                    item_h = 28; list_w = 360; font_s = 0.4; header_s = 0.45
+
+                max_show = min(len(tracks), 10)
+                pad = 10
+                list_h = max_show * item_h + pad * 2 + 20
+
+                # position
+                margin = 20
+                if tl_pos == 'tl': list_x, list_y = margin, margin
+                elif tl_pos == 'bl': list_x, list_y = margin, h - list_h - margin
+                elif tl_pos == 'br': list_x, list_y = w - list_w - margin, h - list_h - margin
+                else: list_x, list_y = w - list_w - margin, margin  # tr default
+
+                # font mapping
+                tl_font_map = {
+                    'M': cv2.FONT_HERSHEY_DUPLEX, 'S': cv2.FONT_HERSHEY_SIMPLEX,
+                    'I': cv2.FONT_HERSHEY_TRIPLEX, 'C': cv2.FONT_HERSHEY_PLAIN,
+                }
+                tfont = tl_font_map.get(tl_font, cv2.FONT_HERSHEY_SIMPLEX)
+
+                # background style
                 overlay_list = np.zeros((list_h, list_w, 3), dtype=np.uint8)
-                cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (15, 10, 10), -1)
-                cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (60, 50, 50), 1)
+                if tl_bg == 'glass':
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (20, 15, 15), -1)
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (80, 70, 70), 1)
+                    blend_alpha = 0.55
+                elif tl_bg == 'minimal':
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (0, 0, 0), -1)
+                    # hanya border tipis
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (50, 50, 50), 1)
+                    blend_alpha = 0.40
+                else:  # dark
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (15, 10, 10), -1)
+                    cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (60, 50, 50), 1)
+                    blend_alpha = 0.82
 
                 # header
-                cv2.putText(overlay_list, "TRACK LIST", (pad, pad + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+                cv2.putText(overlay_list, "TRACK LIST", (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
 
-                start_idx = max(0, cur_idx - 4)  # scroll biar lagu aktif di tengah
+                start_idx = max(0, cur_idx - 4)
                 shown = 0
                 for i in range(start_idx, min(len(tracks), start_idx + max_show)):
                     tr = tracks[i]
                     y0 = pad + 20 + shown * item_h
-                    t_sec = sec - tr['start']
                     is_active = (i == cur_idx)
 
                     if is_active:
-                        # highlight bar
                         cv2.rectangle(overlay_list, (pad, y0), (list_w - pad, y0 + item_h - 2), (70, 140, 60), -1)
                         mark = "▶ "
                     else:
@@ -927,20 +959,15 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     title_str = tr['title'][:22]
                     dur_str = f"{int(tr['duration']//60)}:{int(tr['duration']%60):02d}"
 
-                    if is_active:
-                        text_color = (255, 255, 255)
-                    else:
-                        text_color = (180, 180, 180)
-
-                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1, cv2.LINE_AA)
-                    cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1, cv2.LINE_AA)
-                    cv2.putText(overlay_list, dur_str, (list_w - pad - 40, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1, cv2.LINE_AA)
-
+                    text_color = (255, 255, 255) if is_active else (180, 180, 180)
+                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    cv2.putText(overlay_list, dur_str, (list_w - pad - 40, y0 + 14), tfont, font_s, (150, 150, 150), 1, cv2.LINE_AA)
                     shown += 1
 
                 # blend ke frame
                 roi_list = frame[list_y:list_y + list_h, list_x:list_x + list_w]
-                cv2.addWeighted(overlay_list, 0.82, roi_list, 0.18, 0, roi_list)
+                cv2.addWeighted(overlay_list, blend_alpha, roi_list, 1.0 - blend_alpha, 0, roi_list)
 
             # ── WATERMARK TEKS ──
             if cfg.get('use_watermark', False):
@@ -1110,7 +1137,7 @@ def background_worker():
             if task.get('vis_mode') == 'random' or preset == 'random':
                 preset = get_random_preset(allowed_presets)
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark"}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)

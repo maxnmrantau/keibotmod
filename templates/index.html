@@ -819,7 +819,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <span style="font-size:10px;font-weight:700;">🏷️ Floating Card</span>
               </label>
               <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-tracklist" style="width:14px;height:14px;accent-color:var(--accent);">
+                <input type="checkbox" id="bc-use-tracklist" style="width:14px;height:14px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
                 <span style="font-size:10px;font-weight:700;">📋 Track List</span>
               </label>
               <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
@@ -862,6 +862,37 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="float">↕ Naik-Turun</option>
                 <option value="scroll">→ Meluncur</option>
                 <option value="pulse">◐ Berdenyut</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ════════ TRACK LIST SETTINGS ════════ -->
+          <div id="vis-tracklist-wrap" style="display:none; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; max-width:800px; margin-left:auto; margin-right:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">📋 Track List Settings</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <select id="bc-tl-font" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="M">Modern (Arial)</option>
+                <option value="S">Sans (Segoe UI)</option>
+                <option value="I">Bold Impact</option>
+                <option value="C">Classic (Times)</option>
+              </select>
+              <select id="bc-tl-size" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="small">Kecil</option>
+                <option value="medium" selected>Sedang</option>
+                <option value="large">Besar</option>
+              </select>
+              <select id="bc-tl-position" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="tr" selected>↗ Kanan Atas</option>
+                <option value="tl">↖ Kiri Atas</option>
+                <option value="br">↘ Kanan Bawah</option>
+                <option value="bl">↙ Kiri Bawah</option>
+              </select>
+              <select id="bc-tl-bg" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="dark">Gelap (default)</option>
+                <option value="glass">Kaca transparan</option>
+                <option value="minimal">Minimal</option>
               </select>
             </div>
           </div>
@@ -1910,7 +1941,11 @@ function getVisConfig() {
     wm_position: document.getElementById('bc-wm-position') ? document.getElementById('bc-wm-position').value : 'bl',
     wm_move: document.getElementById('bc-wm-move') ? document.getElementById('bc-wm-move').value : 'none',
     // tracklist
-    use_tracklist: document.getElementById('bc-use-tracklist') ? document.getElementById('bc-use-tracklist').checked : false
+    use_tracklist: document.getElementById('bc-use-tracklist') ? document.getElementById('bc-use-tracklist').checked : false,
+    tl_font: document.getElementById('bc-tl-font') ? document.getElementById('bc-tl-font').value : 'M',
+    tl_size: document.getElementById('bc-tl-size') ? document.getElementById('bc-tl-size').value : 'medium',
+    tl_position: document.getElementById('bc-tl-position') ? document.getElementById('bc-tl-position').value : 'tr',
+    tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark'
   };
 }
 
@@ -1975,7 +2010,15 @@ function loadVisPreset(name) {
   }
   // tracklist
   const tlCb = document.getElementById('bc-use-tracklist');
-  if (tlCb && p.use_tracklist !== undefined) tlCb.checked = !!p.use_tracklist;
+  if (tlCb && p.use_tracklist !== undefined) {
+    tlCb.checked = !!p.use_tracklist;
+    document.getElementById('vis-tracklist-wrap').style.display = tlCb.checked ? 'block' : 'none';
+  }
+  ['bc-tl-font', 'bc-tl-size', 'bc-tl-position', 'bc-tl-bg'].forEach(id => {
+    const el = document.getElementById(id);
+    const key = id.replace('bc-tl-', 'tl_');
+    if (el && p[key]) el.value = p[key];
+  });
   const wmText = document.getElementById('bc-wm-text');
   if (wmText && p.wm_text) wmText.value = p.wm_text;
   const wmColor = document.getElementById('bc-wm-color');
@@ -2195,6 +2238,92 @@ function drawLivePreview() {
         vCtx.globalAlpha = 1 - alpha;
         vCtx.fillRect(0, 0, cw, ch);
         vCtx.globalAlpha = 1;
+      }
+    }
+
+    // ── watermark preview ──
+    if (cfg.use_watermark && cfg.wm_text) {
+      const fs = parseInt(cfg.wm_size) || 24;
+      vCtx.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+      vCtx.textAlign = 'center';
+      vCtx.textBaseline = 'middle';
+      const txt = cfg.wm_text;
+      // shadow
+      vCtx.fillStyle = 'rgba(0,0,0,0.6)';
+      vCtx.fillText(txt, cw/2+2, ch-40+2);
+      // text
+      vCtx.fillStyle = cfg.wm_color || '#ffffff';
+      vCtx.fillText(txt, cw/2, ch-40);
+    }
+
+    // ── tracklist preview ──
+    if (cfg.use_tracklist && playlistData.length > 0) {
+      const tlSize = cfg.tl_size || 'medium';
+      const tlPos = cfg.tl_position || 'tr';
+      const fontSize = tlSize === 'large' ? 11 : tlSize === 'small' ? 8 : 10;
+      const itemH = tlSize === 'large' ? 22 : tlSize === 'small' ? 16 : 20;
+      const maxShow = Math.min(playlistData.length, 8);
+      const listW = tlSize === 'large' ? 320 : 260;
+      const listH = maxShow * itemH + 28;
+      const pad = 10;
+      const margin = 12;
+
+      let lx, ly;
+      if (tlPos === 'tl') { lx = margin; ly = margin; }
+      else if (tlPos === 'bl') { lx = margin; ly = ch - listH - margin; }
+      else if (tlPos === 'br') { lx = cw - listW - margin; ly = ch - listH - margin; }
+      else { lx = cw - listW - margin; ly = margin; }
+
+      // bg
+      vCtx.fillStyle = 'rgba(15,10,10,0.8)';
+      vCtx.fillRect(lx, ly, listW, listH);
+      vCtx.strokeStyle = 'rgba(60,50,50,0.6)';
+      vCtx.lineWidth = 1;
+      vCtx.strokeRect(lx, ly, listW, listH);
+
+      vCtx.font = 'bold 11px Arial';
+      vCtx.fillStyle = '#ccc';
+      vCtx.fillText('TRACK LIST', lx + pad, ly + pad + 4);
+
+      // cari lagu aktif berdasarkan playlist tracker
+      const elapsed = ((performance.now() - playlistSimStart) / 1000) * 10;
+      const totalDur = playlistData.reduce((s, t) => s + t.duration, 0);
+      const looped = totalDur > 0 ? elapsed % totalDur : 0;
+      let activeIdx = 0, acc = 0;
+      for (let i = 0; i < playlistData.length; i++) {
+        if (looped < acc + playlistData[i].duration) { activeIdx = i; break; }
+        acc += playlistData[i].duration;
+        activeIdx = i;
+      }
+
+      const startIdx = Math.max(0, activeIdx - 3);
+      for (let i = 0; i < maxShow && (startIdx + i) < playlistData.length; i++) {
+        const idx = startIdx + i;
+        const tr = playlistData[idx];
+        const y0 = ly + pad + 20 + i * itemH;
+        const isActive = (idx === activeIdx);
+
+        if (isActive) {
+          vCtx.fillStyle = 'rgba(60,180,80,0.3)';
+          vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
+          vCtx.fillStyle = '#0f0';
+          vCtx.font = 'bold ' + fontSize + 'px Arial';
+          vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
+        } else {
+          vCtx.font = fontSize + 'px Arial';
+          vCtx.fillStyle = '#aaa';
+          vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
+        }
+
+        vCtx.fillStyle = isActive ? '#fff' : '#bbb';
+        const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
+        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px Arial';
+        vCtx.fillText(tr.title.substring(0, 20), titleX, y0 + itemH * 0.65);
+
+        const durStr = Math.floor(tr.duration/60) + ':' + String(Math.floor(tr.duration%60)).padStart(2,'0');
+        vCtx.fillStyle = '#999';
+        vCtx.font = fontSize + 'px Arial';
+        vCtx.fillText(durStr, lx + listW - pad - 30, y0 + itemH * 0.65);
       }
     }
 
