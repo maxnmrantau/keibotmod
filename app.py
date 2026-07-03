@@ -296,6 +296,88 @@ def get_random_preset(allowed_names=None):
         return random.choice(list(presets.values()))
     except: return None
 
+def get_smart_preset(audio_path):
+    """Menganalisis audio dan memilih preset yang cocok secara cerdas"""
+    preset = None
+    try:
+        y, sr = librosa.load(audio_path, sr=22050, mono=True, duration=30)
+        # deteksi BPM
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # energi rata-rata
+        rms = np.sqrt(np.mean(y**2))
+        energy = min(1.0, rms * 5)
+        # spectral centroid (brightness)
+        cent = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
+        brightness = min(1.0, cent / 3000)
+
+        if tempo < 80:
+            # slow / chill
+            preset = {
+                "effect_type": random.choice(["waveform", "mirror", "smooth_blob", "sinusoidal"]),
+                "particle_type": random.choice(["petals", "smoke", "snow", "sparkle"]),
+                "bar_style": "center",
+                "reactivity": round(random.uniform(0.4, 0.7), 2),
+                "gravity": round(random.uniform(0.04, 0.10), 2),
+            }
+        elif tempo < 120:
+            # medium
+            preset = {
+                "effect_type": random.choice(["spectrum", "circular", "dots_pixel", "filled_wave"]),
+                "particle_type": random.choice(["sparkle", "trail", "bubbles", "petals"]),
+                "bar_style": "bottom",
+                "reactivity": round(random.uniform(0.6, 0.9), 2),
+                "gravity": round(random.uniform(0.06, 0.14), 2),
+            }
+        else:
+            # fast / energetic
+            energy_boost = min(1.0, energy * 1.3)
+            preset = {
+                "effect_type": random.choice(["sunburst", "neon_glow", "halftone", "pixel"]),
+                "particle_type": random.choice(["fireworks", "trail", "rain", "sparkle"]),
+                "bar_style": "bottom",
+                "reactivity": round(random.uniform(0.8, 1.5), 2),
+                "gravity": round(random.uniform(0.10, 0.20), 2),
+            }
+
+        if preset:
+            # warna berdasarkan brightness
+            if brightness > 0.6:
+                preset["color_bot"] = random.choice(["#ff6b6b", "#f093fb", "#4facfe", "#fa709a"])
+                preset["color_top"] = random.choice(["#00f2fe", "#4facfe", "#f093fb", "#fa709a"])
+            else:
+                preset["color_bot"] = random.choice(["#10b981", "#00d4ff", "#7c5cfc", "#06d6a0"])
+                preset["color_top"] = random.choice(["#00e5ff", "#7c5cfc", "#10b981", "#7209b7"])
+
+            preset["color_part"] = "#ffffff"
+            preset["pos_x"] = 50
+            preset["pos_y"] = 85
+            preset["width_pct"] = 60
+            preset["max_height"] = 40
+            preset["idle_height"] = 5
+            preset["bar_count"] = random.choice([48, 64, 80])
+            preset["spacing"] = random.choice([2, 3, 4])
+            preset["part_amount"] = random.choice([3, 5, 8])
+            preset["part_speed"] = round(random.uniform(0.5, 1.5), 1)
+            preset["smoothing"] = 0.90
+            preset["use_beat_pulse"] = random.choice([True, False])
+            preset["fade_duration"] = 0
+            preset["use_watermark"] = False
+            preset["wm_text"] = ""
+            preset["wm_color"] = "#ffffff"
+            preset["wm_font"] = "M"
+            preset["wm_size"] = 24
+            preset["wm_position"] = "bl"
+            preset["wm_move"] = "none"
+            preset["use_tracklist"] = False
+            preset["tl_font"] = "M"
+            preset["tl_size"] = "medium"
+            preset["tl_position"] = "tr"
+            preset["tl_bg"] = "dark"
+
+        return preset
+    except:
+        return None
+
 # ==========================================
 # ⚙️ CORE ENGINE (VISUALIZER & FFMPEG)
 # ==========================================
@@ -1326,8 +1408,13 @@ def background_worker():
 
             preset = task.get('vis_preset')
             allowed_presets = task.get('vis_presets_allowed', [])
-            if task.get('vis_mode') == 'random' or preset == 'random':
+            vis_mode = task.get('vis_mode')
+            if vis_mode == 'random' or preset == 'random':
                 preset = get_random_preset(allowed_presets)
+            elif vis_mode == 'smart':
+                smart_preset = get_smart_preset(base_audio)
+                if smart_preset:
+                    preset = smart_preset
             if not isinstance(preset, dict):
                 preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark"}
 
@@ -1347,6 +1434,82 @@ def background_worker():
 
             render_video_core(task_id, base_audio, bg_paths, base_video, base_duration_sec, preset)
             if stop_flags.get(task_id): raise Exception("Dibatalkan")
+
+            # ── SMART CUT: potong & acak ulang chunk video ──
+            smart_cut = task.get('smart_cut', False)
+            cut_duration = float(task.get('cut_duration', 5))
+            cut_remainder = task.get('cut_remainder', 'end')  # 'middle' atau 'end'
+            if smart_cut and cut_duration > 0 and base_duration_sec > cut_duration:
+                with db_lock:
+                    for d in active_tasks:
+                        if d['id'] == task_id: d['status'] = f"Smart Cut {cut_duration}s... ✂️"
+                save_tasks_db()
+
+                full_chunks = int(base_duration_sec // cut_duration)
+                remainder = base_duration_sec - (full_chunks * cut_duration)
+
+                # segmentasi menggunakan FFmpeg
+                seg_dir = os.path.join(BASE_UPLOAD, f"seg_{task_id}")
+                os.makedirs(seg_dir, exist_ok=True)
+                seg_pattern = os.path.join(seg_dir, "chunk_%03d.mp4")
+                subprocess.run([
+                    get_ffmpeg_path(), '-y', '-i', base_video,
+                    '-c', 'copy', '-map', '0',
+                    '-f', 'segment', '-segment_time', str(cut_duration),
+                    '-reset_timestamps', '1',
+                    seg_pattern
+                ], check=True, capture_output=True)
+
+                # kumpulkan chunk files
+                chunks = sorted([os.path.join(seg_dir, f) for f in os.listdir(seg_dir) if f.endswith('.mp4')],
+                                key=lambda x: int(x.split('_')[-1].split('.')[0]))
+                # potong sesuai full_chunks (abaikan chunk kelebihan)
+                chunks = chunks[:full_chunks]
+
+                if len(chunks) >= 2:
+                    # acak urutan chunk
+                    random.shuffle(chunks)
+
+                    # siapkan concat file
+                    smart_txt = os.path.join(BASE_UPLOAD, f"smart_{task_id}.txt")
+                    with open(smart_txt, 'w', encoding='utf-8') as f:
+                        for ch in chunks:
+                            f.write(f"file '{os.path.abspath(ch).replace(chr(92), '/')}'\n")
+
+                    # sisipkan remainder
+                    if remainder > 0.5:
+                        # ekstrak remainder dari base_video
+                        rem_video = os.path.join(BASE_UPLOAD, f"rem_{task_id}.mp4")
+                        subprocess.run([
+                            get_ffmpeg_path(), '-y', '-i', base_video,
+                            '-ss', str(full_chunks * cut_duration), '-t', str(remainder),
+                            '-c', 'copy', rem_video
+                        ], check=True, capture_output=True)
+
+                        if cut_remainder == 'middle':
+                            # sisipkan di tengah
+                            lines = open(smart_txt).readlines()
+                            mid = len(lines) // 2
+                            lines.insert(mid, f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
+                            with open(smart_txt, 'w') as f: f.writelines(lines)
+                        else:
+                            # end - tambah di akhir
+                            with open(smart_txt, 'a') as f:
+                                f.write(f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
+
+                    # concat ulang
+                    smart_video = os.path.join(BASE_UPLOAD, f"smart_{task_id}.mp4")
+                    subprocess.run([
+                        get_ffmpeg_path(), '-y', '-threads', '2', '-f', 'concat', '-safe', '0',
+                        '-i', smart_txt, '-c', 'copy', smart_video
+                    ], check=True, capture_output=True)
+
+                    # ganti base_video dengan hasil smart cut
+                    shutil.move(smart_video, base_video)
+                    base_duration_sec = full_chunks * cut_duration + (remainder if remainder > 0.5 else 0)
+
+                # cleanup segment files
+                shutil.rmtree(seg_dir, ignore_errors=True)
 
             target_hours = float(task.get('target_duration_hours', 1))
             target_sec = target_hours * 3600
@@ -1946,7 +2109,10 @@ def batch_create():
             "vis_mode": data.get('vis_mode'), "vis_preset": data.get('vis_preset'),
             "vis_presets_allowed": data.get('vis_presets_allowed', []), "description": data.get('description', ''),
             "tags": data.get('tags', ''), "privacy": data.get('privacy', 'public'), "playlist_id": data.get('playlist_id', ''),
-            "use_floating_card": data.get('use_floating_card', False)
+            "use_floating_card": data.get('use_floating_card', False),
+            "smart_cut": data.get('smart_cut', False),
+            "cut_duration": data.get('cut_duration', 5),
+            "cut_remainder": data.get('cut_remainder', 'end')
         }
         with db_lock:
             active_tasks.append({"id": t_id, "title": blueprint['title'], "time": blueprint['publish_date'], "status": "In Factory Queue ⚙️", "type": "📺 VOD"})

@@ -686,6 +686,22 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <label class="fl" style="color:var(--green);">Jumlah Background Acak</label>
                 <input type="number" id="bc-bg-count" value="1" min="1" max="50" title="Berapa video/gambar background yang mau dicampur?">
             </div>
+            <div style="margin-top:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-smart-cut" style="width:16px;height:16px;accent-color:var(--accent);" onchange="document.getElementById('sc-settings').style.display=this.checked?'flex':'none'">
+                <span style="font-size:11px;font-weight:700;">✂️ Smart Cut</span>
+              </label>
+              <div id="sc-settings" style="display:none; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span style="font-size:10px;color:var(--muted);font-weight:600;">Potong per</span>
+                <input type="number" id="bc-cut-duration" value="5" min="2" max="30" step="1" style="width:60px;padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <span style="font-size:10px;color:var(--muted);font-weight:600;">detik</span>
+                <span style="font-size:10px;color:var(--muted);font-weight:600;">Sisa potongan di</span>
+                <select id="bc-cut-remainder" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="end">Akhir video</option>
+                  <option value="middle">Tengah video</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div class="form-section">
@@ -815,6 +831,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               <select id="bc-vis-mode" onchange="onVisModeChange()">
                 <option value="manual">Manual (Terapkan setting ini ke semua video)</option>
                 <option value="random">🎲 Random Acak dari Preset Tersimpan</option>
+                <option value="smart">🎯 Smart Random (Sistem pilihkan)</option>
               </select>
             </div>
             
@@ -1891,7 +1908,10 @@ function processBatch() {
     vis_preset: visMode === 'random' ? 'random' : getVisConfig(),
     vis_presets_allowed: selectedPresets,
     generated_titles: generated_titles,
-    use_floating_card: is_floating
+    use_floating_card: is_floating,
+    smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
+    cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
+    cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end'
   };
 
   fetch('/api/batch_create', {
