@@ -2933,6 +2933,7 @@ function drawPreviewParticles(cw, ch, cfg) {
   const alive = [];
   vCtx.fillStyle = cfg.color_part;
   vCtx.globalAlpha = partAlpha;
+  for (const p of prev_particles) {
     p.x += p.vx * spd; p.y += p.vy * spd;
     p.life--;
 
