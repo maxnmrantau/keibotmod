@@ -796,10 +796,10 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </select>
             </div>
 
-            <div class="fg" style="margin-bottom:0; justify-content:flex-end;">
+	            <div class="fg" style="margin-bottom:0; justify-content:flex-end;">
               <label style="display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);padding:10px;border-radius:8px;cursor:pointer;color:var(--text);">
                 <input type="checkbox" id="bc-use-beat-pulse" style="width:16px;height:16px;accent-color:var(--accent);">
-                <span style="font-size:11px;font-weight:700;">💫 Beat Pulse / Glow</span>
+                <span style="font-size:11px;font-weight:700;">💫 Beat Pulse</span>
               </label>
             </div>
           </div>
@@ -813,11 +813,52 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </select>
             </div>
             
-            <div class="fg" style="margin-bottom:0; justify-content:flex-end;">
-              <label style="display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);padding:10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-floating-card" checked style="width:16px;height:16px;accent-color:var(--accent);">
-                <span style="font-size:11px;font-weight:700;">Tampilkan Nama Lagu (Floating Card)</span>
+            <div class="fg" style="margin-bottom:0; display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-floating-card" checked style="width:14px;height:14px;accent-color:var(--accent);">
+                <span style="font-size:10px;font-weight:700;">🏷️ Floating Card</span>
               </label>
+              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-watermark" style="width:14px;height:14px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'block':'none'">
+                <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ════════ WATERMARK SETTINGS ════════ -->
+          <div id="vis-watermark-wrap" style="display:none; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; max-width:800px; margin-left:auto; margin-right:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">💧 Watermark Settings</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input type="text" id="bc-wm-text" value="@yourchannel" placeholder="Teks watermark..." style="flex:1;min-width:120px;padding:6px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+              <input type="color" id="bc-wm-color" value="#ffffff" style="width:32px;height:32px;border-radius:4px;border:1px solid var(--border);background:none;padding:2px;cursor:pointer;">
+              <select id="bc-wm-font" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="M">Modern (Arial)</option>
+                <option value="S">Sans (Segoe UI)</option>
+                <option value="I">Bold Impact</option>
+                <option value="C">Classic (Times)</option>
+              </select>
+              <select id="bc-wm-size" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="18">18px Kecil</option>
+                <option value="24" selected>24px Normal</option>
+                <option value="32">32px Besar</option>
+                <option value="48">48px Sangat Besar</option>
+                <option value="64">64px Raksasa</option>
+              </select>
+              <select id="bc-wm-position" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="tl">↖ Kiri Atas</option>
+                <option value="tr">↗ Kanan Atas</option>
+                <option value="bl" selected>↙ Kiri Bawah</option>
+                <option value="br">↘ Kanan Bawah</option>
+                <option value="center">⊗ Tengah</option>
+              </select>
+              <select id="bc-wm-move" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <option value="none">⏸ Statis</option>
+                <option value="float">↕ Naik-Turun</option>
+                <option value="scroll">→ Meluncur</option>
+                <option value="pulse">◐ Berdenyut</option>
+              </select>
             </div>
           </div>
 
@@ -1855,7 +1896,15 @@ function getVisConfig() {
     effect_type: document.getElementById('bc-effect-type') ? document.getElementById('bc-effect-type').value : 'spectrum',
     use_beat_pulse: document.getElementById('bc-use-beat-pulse') ? document.getElementById('bc-use-beat-pulse').checked : false,
     particle_type: document.getElementById('bc-particle-type') ? document.getElementById('bc-particle-type').value : 'sparkle',
-    fade_duration: document.getElementById('bc-fade') ? parseFloat(document.getElementById('bc-fade').value) : 0
+    fade_duration: document.getElementById('bc-fade') ? parseFloat(document.getElementById('bc-fade').value) : 0,
+    // watermark settings
+    use_watermark: document.getElementById('bc-use-watermark') ? document.getElementById('bc-use-watermark').checked : false,
+    wm_text: document.getElementById('bc-wm-text') ? document.getElementById('bc-wm-text').value : '',
+    wm_color: document.getElementById('bc-wm-color') ? document.getElementById('bc-wm-color').value : '#ffffff',
+    wm_font: document.getElementById('bc-wm-font') ? document.getElementById('bc-wm-font').value : 'M',
+    wm_size: document.getElementById('bc-wm-size') ? parseInt(document.getElementById('bc-wm-size').value) : 24,
+    wm_position: document.getElementById('bc-wm-position') ? document.getElementById('bc-wm-position').value : 'bl',
+    wm_move: document.getElementById('bc-wm-move') ? document.getElementById('bc-wm-move').value : 'none'
   };
 }
 
@@ -1911,6 +1960,21 @@ function loadVisPreset(name) {
       if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(2));
       el.value = val; uv(lblId, val, unit);
     }
+  });
+  // watermark
+  const wmCb = document.getElementById('bc-use-watermark');
+  if (wmCb && p.use_watermark !== undefined) {
+    wmCb.checked = !!p.use_watermark;
+    document.getElementById('vis-watermark-wrap').style.display = wmCb.checked ? 'block' : 'none';
+  }
+  const wmText = document.getElementById('bc-wm-text');
+  if (wmText && p.wm_text) wmText.value = p.wm_text;
+  const wmColor = document.getElementById('bc-wm-color');
+  if (wmColor && p.wm_color) wmColor.value = p.wm_color;
+  ['bc-wm-font', 'bc-wm-size', 'bc-wm-position', 'bc-wm-move'].forEach(id => {
+    const el = document.getElementById(id);
+    const key = id.replace('bc-wm-', 'wm_');
+    if (el && p[key]) el.value = p[key];
   });
 }
 
@@ -2163,7 +2227,7 @@ function drawPreviewCircular(cw, ch, cfg) {
   vCtx.beginPath(); vCtx.arc(cx, cy, radius, 0, Math.PI * 2); vCtx.stroke();
 
   for (let i = 0; i < cfg.bar_count; i++) {
-    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * maxBarH), maxBarH);
+    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * 0.5), maxBarH);
     if (h_val <= 0) continue;
     const angle = i * angleStep - Math.PI / 2;
     const ix = cx + radius * Math.cos(angle);
@@ -2230,7 +2294,7 @@ function drawPreviewMirror(cw, ch, cfg) {
   const halfH = limitH / 2;
 
   for (let i = 0; i < cfg.bar_count; i++) {
-    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * halfH), halfH);
+    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * 0.5), halfH);
     if (h_val <= 0) continue;
     const x = startX + i * (barW + cfg.spacing);
 
@@ -2291,7 +2355,7 @@ function drawPreviewSunburst(cw, ch, cfg) {
 
   vCtx.lineCap = 'round';
   for (let i = 0; i < cfg.bar_count; i++) {
-    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * maxBarH), maxBarH);
+    const h_val = Math.min(Math.max(cfg.idle_height, prev_bars[i] * 0.666), maxBarH);
     if (h_val <= 0) continue;
     const angle = i * angleStep - Math.PI / 2;
     const ix = cx + innerR * Math.cos(angle);

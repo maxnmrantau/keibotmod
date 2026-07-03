@@ -878,6 +878,65 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             cv2.putText(overlay, "J", (36, 65), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                             cv2.addWeighted(overlay, alpha, roi, 1 - alpha, 0, roi)
 
+            # ── WATERMARK TEKS ──
+            if cfg.get('use_watermark', False):
+                wm_text = str(cfg.get('wm_text', ''))
+                if wm_text:
+                    wm_color_hex = cfg.get('wm_color', '#ffffff')
+                    wm_color = hex_to_rgb(wm_color_hex)
+                    wm_color_bgr = (wm_color[2], wm_color[1], wm_color[0])  # BGR untuk cv2
+                    wm_size = int(cfg.get('wm_size', 24))
+                    wm_pos = cfg.get('wm_position', 'bl')
+                    wm_move = cfg.get('wm_move', 'none')
+                    wm_font = cfg.get('wm_font', 'M')
+
+                    # font mapping
+                    font_map = {
+                        'M': cv2.FONT_HERSHEY_DUPLEX,
+                        'S': cv2.FONT_HERSHEY_SIMPLEX,
+                        'I': cv2.FONT_HERSHEY_TRIPLEX,
+                        'C': cv2.FONT_HERSHEY_PLAIN,
+                    }
+                    font = font_map.get(wm_font, cv2.FONT_HERSHEY_SIMPLEX)
+                    thickness = max(1, wm_size // 14)
+
+                    # ukuran teks untuk posisi
+                    (tw, th), _ = cv2.getTextSize(wm_text, font, wm_size * 0.06, thickness)
+                    margin = 30
+
+                    # posisi dasar
+                    base_positions = {
+                        'tl': (margin, margin + th),
+                        'tr': (w - tw - margin, margin + th),
+                        'bl': (margin, h - margin),
+                        'br': (w - tw - margin, h - margin),
+                        'center': (w//2 - tw//2, h//2 + th//2),
+                    }
+                    bx, by = base_positions.get(wm_pos, (margin, h - margin))
+
+                    # movement
+                    frame_sec = f / fps
+                    if wm_move == 'float':
+                        offset = math.sin(frame_sec * 1.5) * 10
+                        by += int(offset)
+                    elif wm_move == 'scroll':
+                        scroll_range = w + tw + margin * 2
+                        offset = ((frame_sec * 40) % scroll_range) - tw - margin
+                        bx = int(offset)
+                    elif wm_move == 'pulse':
+                        pulse = 0.7 + 0.3 * abs(math.sin(frame_sec * 2.5))
+                    else:
+                        pulse = 1.0
+
+                    # shadow
+                    shadow_color = (0, 0, 0)
+                    cv2.putText(frame, wm_text, (bx+2, by+2), font, wm_size * 0.06, shadow_color, thickness, cv2.LINE_AA)
+                    # draw text
+                    if wm_move == 'pulse':
+                        cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06 * pulse, wm_color_bgr, thickness, cv2.LINE_AA)
+                    else:
+                        cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06, wm_color_bgr, thickness, cv2.LINE_AA)
+
             proc.stdin.write(frame.tobytes())
             
     except Exception as e:
@@ -987,7 +1046,7 @@ def background_worker():
             if task.get('vis_mode') == 'random' or preset == 'random':
                 preset = get_random_preset(allowed_presets)
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none"}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)
