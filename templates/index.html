@@ -819,6 +819,10 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <span style="font-size:10px;font-weight:700;">🏷️ Floating Card</span>
               </label>
               <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-tracklist" style="width:14px;height:14px;accent-color:var(--accent);">
+                <span style="font-size:10px;font-weight:700;">📋 Track List</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
                 <input type="checkbox" id="bc-use-watermark" style="width:14px;height:14px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'block':'none'">
                 <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
               </label>
@@ -1904,7 +1908,9 @@ function getVisConfig() {
     wm_font: document.getElementById('bc-wm-font') ? document.getElementById('bc-wm-font').value : 'M',
     wm_size: document.getElementById('bc-wm-size') ? parseInt(document.getElementById('bc-wm-size').value) : 24,
     wm_position: document.getElementById('bc-wm-position') ? document.getElementById('bc-wm-position').value : 'bl',
-    wm_move: document.getElementById('bc-wm-move') ? document.getElementById('bc-wm-move').value : 'none'
+    wm_move: document.getElementById('bc-wm-move') ? document.getElementById('bc-wm-move').value : 'none',
+    // tracklist
+    use_tracklist: document.getElementById('bc-use-tracklist') ? document.getElementById('bc-use-tracklist').checked : false
   };
 }
 
@@ -1967,6 +1973,9 @@ function loadVisPreset(name) {
     wmCb.checked = !!p.use_watermark;
     document.getElementById('vis-watermark-wrap').style.display = wmCb.checked ? 'block' : 'none';
   }
+  // tracklist
+  const tlCb = document.getElementById('bc-use-tracklist');
+  if (tlCb && p.use_tracklist !== undefined) tlCb.checked = !!p.use_tracklist;
   const wmText = document.getElementById('bc-wm-text');
   if (wmText && p.wm_text) wmText.value = p.wm_text;
   const wmColor = document.getElementById('bc-wm-color');

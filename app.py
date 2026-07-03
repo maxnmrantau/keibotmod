@@ -878,6 +878,70 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             cv2.putText(overlay, "J", (36, 65), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                             cv2.addWeighted(overlay, alpha, roi, 1 - alpha, 0, roi)
 
+            # ── TRACK LIST (daftar lagu di dalam video) ──
+            if cfg.get('use_tracklist', False) and 'track_schedule' in cfg:
+                sec = f / fps
+                cur_idx = -1
+                for idx, track in enumerate(cfg['track_schedule']):
+                    if track['start'] <= sec < track['end']:
+                        cur_idx = idx
+                        break
+                if cur_idx < 0:
+                    # cari track terakhir jika sudah lewat semua
+                    if cfg['track_schedule'] and sec >= cfg['track_schedule'][-1]['end']:
+                        cur_idx = len(cfg['track_schedule']) - 1
+
+                tracks = cfg['track_schedule']
+                max_show = min(len(tracks), 10)
+                item_h = 28
+                pad = 10
+                list_w = 360
+                list_h = max_show * item_h + pad * 2 + 20  # header
+                list_x = w - list_w - 20
+                list_y = 20
+
+                # background
+                overlay_list = np.zeros((list_h, list_w, 3), dtype=np.uint8)
+                cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (15, 10, 10), -1)
+                cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (60, 50, 50), 1)
+
+                # header
+                cv2.putText(overlay_list, "TRACK LIST", (pad, pad + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+
+                start_idx = max(0, cur_idx - 4)  # scroll biar lagu aktif di tengah
+                shown = 0
+                for i in range(start_idx, min(len(tracks), start_idx + max_show)):
+                    tr = tracks[i]
+                    y0 = pad + 20 + shown * item_h
+                    t_sec = sec - tr['start']
+                    is_active = (i == cur_idx)
+
+                    if is_active:
+                        # highlight bar
+                        cv2.rectangle(overlay_list, (pad, y0), (list_w - pad, y0 + item_h - 2), (70, 140, 60), -1)
+                        mark = "▶ "
+                    else:
+                        mark = "   "
+
+                    num_str = f"{mark}{i+1}."
+                    title_str = tr['title'][:22]
+                    dur_str = f"{int(tr['duration']//60)}:{int(tr['duration']%60):02d}"
+
+                    if is_active:
+                        text_color = (255, 255, 255)
+                    else:
+                        text_color = (180, 180, 180)
+
+                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1, cv2.LINE_AA)
+                    cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, text_color, 1, cv2.LINE_AA)
+                    cv2.putText(overlay_list, dur_str, (list_w - pad - 40, y0 + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1, cv2.LINE_AA)
+
+                    shown += 1
+
+                # blend ke frame
+                roi_list = frame[list_y:list_y + list_h, list_x:list_x + list_w]
+                cv2.addWeighted(overlay_list, 0.82, roi_list, 0.18, 0, roi_list)
+
             # ── WATERMARK TEKS ──
             if cfg.get('use_watermark', False):
                 wm_text = str(cfg.get('wm_text', ''))
@@ -1046,7 +1110,7 @@ def background_worker():
             if task.get('vis_mode') == 'random' or preset == 'random':
                 preset = get_random_preset(allowed_presets)
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none"}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "gravity": 0.08, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)
