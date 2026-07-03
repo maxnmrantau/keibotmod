@@ -904,18 +904,18 @@ class VisualEngine:
         cell_h = int(max_h * 0.8 / rows)
         start_x = int(w * px) - (cols * cell_w) // 2
         start_y = int(h * py) - (rows * cell_h) // 2
+        max_dot = min(cell_w, cell_h) * 0.45
 
         for r in range(rows):
             for c in range(cols):
                 idx = (r * cols + c) % n
-                amp = self.bar_h[idx]
-                dot_r = max(1, int(amp * 0.12 * min(cell_w, cell_h)))
-                if dot_r > 0:
-                    dx = start_x + c * cell_w + cell_w // 2
-                    dy = start_y + r * cell_h + cell_h // 2
-                    t = idx / max(1, n - 1)
-                    color = self._bar_color(int(idx), int(n))
-                    cv2.circle(frame, (dx, dy), dot_r, color, -1)
+                amp = min(1.0, self.bar_h[idx] / max(max_h, 1))
+                dot_r = max(1, int(1 + amp * max_dot))
+                dx = start_x + c * cell_w + cell_w // 2
+                dy = start_y + r * cell_h + cell_h // 2
+                t = idx / max(1, n - 1)
+                color = self._bar_color(int(idx), int(n))
+                cv2.circle(frame, (dx, dy), dot_r, color, -1)
 
     # ═══════════════════════════════════════════════════════════
     #  BEAT PULSE / GLOW  (overlay flash saat bass hit)
@@ -1188,6 +1188,8 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 if tl_pos == 'tl': list_x, list_y = margin, margin
                 elif tl_pos == 'bl': list_x, list_y = margin, h - list_h - margin
                 elif tl_pos == 'br': list_x, list_y = w - list_w - margin, h - list_h - margin
+                elif tl_pos == 'cl': list_x, list_y = margin, (h - list_h) // 2
+                elif tl_pos == 'cr': list_x, list_y = w - list_w - margin, (h - list_h) // 2
                 else: list_x, list_y = w - list_w - margin, margin  # tr default
 
                 # font mapping
@@ -1290,6 +1292,12 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         bx = int(offset)
                     elif wm_move == 'pulse':
                         pulse = 0.7 + 0.3 * abs(math.sin(frame_sec * 2.5))
+                    elif wm_move == 'random':
+                        # ganti posisi setiap 2 detik
+                        phase = int(frame_sec / 2) * 137  # seed acak
+                        bx = int((math.sin(phase) * 0.5 + 0.5) * (w - tw - margin * 2) + margin)
+                        by = int((math.cos(phase * 1.3) * 0.5 + 0.5) * (h - th - margin * 2) + margin + th)
+                        pulse = 1.0
                     else:
                         pulse = 1.0
 

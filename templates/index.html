@@ -884,6 +884,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="float">↕ Naik-Turun</option>
                 <option value="scroll">→ Meluncur</option>
                 <option value="pulse">◐ Berdenyut</option>
+                <option value="random">🎲 Random Acak</option>
               </select>
             </div>
           </div>
@@ -910,6 +911,8 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="tl">↖ Kiri Atas</option>
                 <option value="br">↘ Kanan Bawah</option>
                 <option value="bl">↙ Kiri Bawah</option>
+                <option value="cr">◫ Tengah Kanan</option>
+                <option value="cl">◪ Tengah Kiri</option>
               </select>
               <select id="bc-tl-bg" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
                 <option value="dark">Gelap (default)</option>
@@ -2280,25 +2283,65 @@ function drawLivePreview() {
       }
     }
 
-    // ── watermark preview ──
+    // ── watermark preview (dengan movement) ──
     if (cfg.use_watermark && cfg.wm_text) {
       const fs = parseInt(cfg.wm_size) || 24;
-      vCtx.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+      const txt = cfg.wm_text;
+      let wx = cw/2, wy = ch - 40;
+      const wmMove = cfg.wm_move || 'none';
+      const wmPos = cfg.wm_position || 'bl';
+
+      // posisi dasar
+      const margin = 20;
+      const wmFont = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+      vCtx.font = wmFont;
+      const wmW = vCtx.measureText(txt).width;
+      const wmH = fs;
+
+      if (wmPos === 'tl') { wx = margin + wmW/2; wy = margin + wmH/2; }
+      else if (wmPos === 'tr') { wx = cw - margin - wmW/2; wy = margin + wmH/2; }
+      else if (wmPos === 'bl') { wx = margin + wmW/2; wy = ch - margin; }
+      else if (wmPos === 'br') { wx = cw - margin - wmW/2; wy = ch - margin; }
+      else { wx = cw/2; wy = ch/2; } // center
+
+      // movement
+      let s = 1;
+      if (wmMove === 'float') {
+        wy += Math.sin(timeTick * 0.04) * 15;
+      } else if (wmMove === 'scroll') {
+        const range = cw + wmW + margin * 2;
+        wx = ((timeTick * 3) % range) - wmW/2 - margin;
+      } else if (wmMove === 'pulse') {
+        s = 0.7 + 0.3 * Math.abs(Math.sin(timeTick * 0.05));
+      } else if (wmMove === 'random') {
+        const seed = Math.floor(timeTick / 90) * 91;
+        const rx = (Math.sin(seed + 1) * 0.5 + 0.5) * (cw - wmW - margin * 2) + margin;
+        const ry = (Math.sin(seed + 2) * 0.5 + 0.5) * (ch - wmH - margin * 2) + margin;
+        wx = rx + wmW/2;
+        wy = ry + wmH/2;
+      }
+
+      vCtx.save();
+      vCtx.translate(wx, wy);
+      if (s !== 1) vCtx.scale(s, s);
       vCtx.textAlign = 'center';
       vCtx.textBaseline = 'middle';
-      const txt = cfg.wm_text;
+      vCtx.font = wmFont;
       // shadow
       vCtx.fillStyle = 'rgba(0,0,0,0.6)';
-      vCtx.fillText(txt, cw/2+2, ch-40+2);
+      vCtx.fillText(txt, 2, 2);
       // text
       vCtx.fillStyle = cfg.wm_color || '#ffffff';
-      vCtx.fillText(txt, cw/2, ch-40);
+      vCtx.fillText(txt, 0, 0);
+      vCtx.restore();
     }
 
-    // ── tracklist preview ──
+    // ── tracklist preview (dengan setting font, bg, pos CL/CR) ──
     if (cfg.use_tracklist && playlistData.length > 0) {
       const tlSize = cfg.tl_size || 'medium';
       const tlPos = cfg.tl_position || 'tr';
+      const tlBg = cfg.tl_bg || 'dark';
+      const tlFont = cfg.tl_font || 'M';
       const fontSize = tlSize === 'large' ? 11 : tlSize === 'small' ? 8 : 10;
       const itemH = tlSize === 'large' ? 22 : tlSize === 'small' ? 16 : 20;
       const maxShow = Math.min(playlistData.length, 8);
@@ -2311,20 +2354,37 @@ function drawLivePreview() {
       if (tlPos === 'tl') { lx = margin; ly = margin; }
       else if (tlPos === 'bl') { lx = margin; ly = ch - listH - margin; }
       else if (tlPos === 'br') { lx = cw - listW - margin; ly = ch - listH - margin; }
-      else { lx = cw - listW - margin; ly = margin; }
+      else if (tlPos === 'cl') { lx = margin; ly = (ch - listH) / 2; }
+      else if (tlPos === 'cr') { lx = cw - listW - margin; ly = (ch - listH) / 2; }
+      else { lx = cw - listW - margin; ly = margin; } // tr default
 
-      // bg
-      vCtx.fillStyle = 'rgba(15,10,10,0.8)';
+      // bg style
+      if (tlBg === 'glass') {
+        vCtx.fillStyle = 'rgba(20,15,15,0.55)';
+        vCtx.strokeStyle = 'rgba(80,70,70,0.4)';
+      } else if (tlBg === 'minimal') {
+        vCtx.fillStyle = 'rgba(0,0,0,0.35)';
+        vCtx.strokeStyle = 'rgba(50,50,50,0.3)';
+      } else { // dark
+        vCtx.fillStyle = 'rgba(15,10,10,0.8)';
+        vCtx.strokeStyle = 'rgba(60,50,50,0.6)';
+      }
       vCtx.fillRect(lx, ly, listW, listH);
-      vCtx.strokeStyle = 'rgba(60,50,50,0.6)';
       vCtx.lineWidth = 1;
       vCtx.strokeRect(lx, ly, listW, listH);
 
-      vCtx.font = 'bold 11px Arial';
+      // font face
+      let face = 'Arial';
+      if (tlFont === 'S') face = 'Segoe UI';
+      else if (tlFont === 'I') face = 'Impact';
+      else if (tlFont === 'C') face = 'Times New Roman';
+      else face = 'Arial';
+
+      vCtx.font = 'bold 11px ' + face;
       vCtx.fillStyle = '#ccc';
       vCtx.fillText('TRACK LIST', lx + pad, ly + pad + 4);
 
-      // cari lagu aktif berdasarkan playlist tracker
+      // cari lagu aktif
       const elapsed = ((performance.now() - playlistSimStart) / 1000) * 10;
       const totalDur = playlistData.reduce((s, t) => s + t.duration, 0);
       const looped = totalDur > 0 ? elapsed % totalDur : 0;
@@ -2346,22 +2406,22 @@ function drawLivePreview() {
           vCtx.fillStyle = 'rgba(60,180,80,0.3)';
           vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
           vCtx.fillStyle = '#0f0';
-          vCtx.font = 'bold ' + fontSize + 'px Arial';
+          vCtx.font = 'bold ' + fontSize + 'px ' + face;
           vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
         } else {
-          vCtx.font = fontSize + 'px Arial';
+          vCtx.font = fontSize + 'px ' + face;
           vCtx.fillStyle = '#aaa';
           vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
         }
 
         vCtx.fillStyle = isActive ? '#fff' : '#bbb';
         const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
-        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px Arial';
+        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
         vCtx.fillText(tr.title.substring(0, 20), titleX, y0 + itemH * 0.65);
 
         const durStr = Math.floor(tr.duration/60) + ':' + String(Math.floor(tr.duration%60)).padStart(2,'0');
         vCtx.fillStyle = '#999';
-        vCtx.font = fontSize + 'px Arial';
+        vCtx.font = fontSize + 'px ' + face;
         vCtx.fillText(durStr, lx + listW - pad - 30, y0 + itemH * 0.65);
       }
     }
@@ -2686,19 +2746,18 @@ function drawPreviewHalftone(cw, ch, cfg) {
   const startX = cw * (cfg.pos_x/100) - (cols * cellW) / 2;
   const startY = ch * (cfg.pos_y/100) - (rows * cellH) / 2;
   const limitH = ch * (cfg.max_height/100);
+  const maxDot = Math.min(cellW, cellH) * 0.45;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const idx = (r * cols + c) % cfg.bar_count;
-      const amp = prev_bars[idx] / limitH;
-      const dotR = Math.max(1, amp * 0.12 * Math.min(cellW, cellH));
-      if (dotR > 0) {
-        const dx = startX + c * cellW + cellW / 2;
-        const dy = startY + r * cellH + cellH / 2;
-        const t = idx / Math.max(1, cfg.bar_count - 1);
-        vCtx.fillStyle = lerpColor(cfg.color_top, cfg.color_bot, t);
-        vCtx.beginPath(); vCtx.arc(dx, dy, dotR, 0, Math.PI * 2); vCtx.fill();
-      }
+      const amp = Math.min(1, prev_bars[idx] / limitH);
+      const dotR = Math.max(1, 1 + amp * maxDot);
+      const dx = startX + c * cellW + cellW / 2;
+      const dy = startY + r * cellH + cellH / 2;
+      const t = idx / Math.max(1, cfg.bar_count - 1);
+      vCtx.fillStyle = lerpColor(cfg.color_top, cfg.color_bot, t);
+      vCtx.beginPath(); vCtx.arc(dx, dy, dotR, 0, Math.PI * 2); vCtx.fill();
     }
   }
 }
