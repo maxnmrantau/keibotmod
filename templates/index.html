@@ -820,35 +820,37 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <option value="smooth_blob">◍ Smooth Blob</option>
                 <option value="halftone">⋯ Halftone Dots</option>
               </select>
-            </div>
+	            </div>
 
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
-              <label style="font-size:10px;font-weight:700;color:var(--text);white-space:nowrap;">Mode:</label>
-              <select id="bc-vis-mode" onchange="onVisModeChange()" style="flex:1;min-width:160px;font-size:10px;padding:3px 4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
-                <option value="manual">Manual</option>
-                <option value="random">🎲 Random Acak</option>
-                <option value="smart">🎯 Smart Random</option>
-              </select>
-            
-            <div class="fg" style="margin-bottom:0; display:flex; gap:4px; justify-content:flex-end; flex-wrap:wrap; align-items:center;">
-              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-beat-pulse" style="width:13px;height:13px;accent-color:var(--accent);">
-                <span style="font-size:10px;font-weight:700;">💫 Pulse</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-floating-card" checked style="width:13px;height:13px;accent-color:var(--accent);">
-                <span style="font-size:10px;font-weight:700;">🏷️ Card</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-tracklist" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
-                <span style="font-size:10px;font-weight:700;">📋 Playlist</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-watermark" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'flex':'none'">
-                <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
-              </label>
-            </div>
-          </div>
+	            <div class="fg" style="margin-bottom:0;">
+	              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+	                <label style="font-size:10px;font-weight:700;color:var(--text);white-space:nowrap;">Mode:</label>
+	                <select id="bc-vis-mode" onchange="onVisModeChange()" style="flex:1;min-width:120px;font-size:10px;padding:3px 4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
+	                  <option value="manual">Manual</option>
+	                  <option value="random">🎲 Random Acak</option>
+	                  <option value="smart">🎯 Smart Random</option>
+	                </select>
+	              </div>
+	              <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+	                <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+	                  <input type="checkbox" id="bc-use-beat-pulse" style="width:13px;height:13px;accent-color:var(--accent);">
+	                  <span style="font-size:10px;font-weight:700;">💫 Pulse</span>
+	                </label>
+	                <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+	                  <input type="checkbox" id="bc-use-floating-card" checked style="width:13px;height:13px;accent-color:var(--accent);">
+	                  <span style="font-size:10px;font-weight:700;">🏷️ Card</span>
+	                </label>
+	                <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+	                  <input type="checkbox" id="bc-use-tracklist" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
+	                  <span style="font-size:10px;font-weight:700;">📋 Playlist</span>
+	                </label>
+	                <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+	                  <input type="checkbox" id="bc-use-watermark" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'flex':'none'">
+	                  <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
+	                </label>
+	              </div>
+	            </div>
+	          </div>
 
           <!-- ════════ WATERMARK SETTINGS ════════ -->
           <div id="vis-watermark-wrap" style="display:none; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; max-width:800px; margin-left:auto; margin-right:auto;">
