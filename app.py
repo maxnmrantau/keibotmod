@@ -374,6 +374,7 @@ def get_smart_preset(audio_path):
             preset["tl_position"] = "tr"
             preset["tl_bg"] = "dark"
             preset["tl_title"] = "PLAYLIST"
+            preset["tl_color"] = "#ffffff"
 
         return preset
     except:
@@ -1187,14 +1188,15 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 tl_size = str(cfg.get('tl_size', 'medium'))
                 tl_bg = str(cfg.get('tl_bg', 'dark'))
                 tl_font = str(cfg.get('tl_font', 'M'))
+                tl_color = str(cfg.get('tl_color', '#ffffff'))
 
                 # size config
                 if tl_size == 'large':
-                    item_h = 32; list_w = 400; font_s = 0.5; header_s = 0.5
+                    item_h = 32; list_w = 320; font_s = 0.5; header_s = 0.5
                 elif tl_size == 'small':
-                    item_h = 22; list_w = 280; font_s = 0.35; header_s = 0.4
+                    item_h = 22; list_w = 220; font_s = 0.35; header_s = 0.4
                 else:  # medium
-                    item_h = 28; list_w = 360; font_s = 0.4; header_s = 0.45
+                    item_h = 28; list_w = 280; font_s = 0.4; header_s = 0.45
 
                 max_show = min(len(tracks), 10)
                 pad = 10
@@ -1234,7 +1236,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.82
 
                 # header
-                cv2.putText(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
+                cv2.putText(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 12), tfont, header_s, hex_to_rgb(tl_color)[::-1], 1, cv2.LINE_AA)
 
                 start_idx = max(0, cur_idx - 4)
                 shown = 0
@@ -1252,7 +1254,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         num_str = f"{mark}{i+1}."
                         title_str = tr['title'][:35]
 
-                        text_color = (255, 255, 255) if is_active else (180, 180, 180)
+                        text_color = (255, 255, 255) if is_active else hex_to_rgb(tl_color)[::-1]
                         cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
                         cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
                         shown += 1
@@ -1481,7 +1483,7 @@ def background_worker():
                 if smart_preset:
                     preset = smart_preset
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "tl_color": "#ffffff", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)

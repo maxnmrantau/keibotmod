@@ -922,6 +922,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	                  <select id="bc-tl-bg" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
 	                    <option value="dark">Gelap</option><option value="glass">Kaca</option><option value="minimal">Min</option><option value="transparent">Transparan</option>
 	                  </select>
+	                  <input type="color" id="bc-tl-color" value="#ffffff" style="width:24px;height:24px;border-radius:3px;border:1px solid var(--border);padding:1px;cursor:pointer;" title="Warna teks">
                   <select id="bc-tl-title" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
                     <option value="PLAYLIST">PLAYLIST</option>
                     <option value="TRACKLIST">TRACKLIST</option>
@@ -2053,6 +2054,7 @@ function getVisConfig() {
     tl_position: document.getElementById('bc-tl-position') ? document.getElementById('bc-tl-position').value : 'tr',
     tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark',
     tl_title: document.getElementById('bc-tl-title') ? document.getElementById('bc-tl-title').value : 'PLAYLIST',
+    tl_color: document.getElementById('bc-tl-color') ? document.getElementById('bc-tl-color').value : '#ffffff',
     // timestamp
     use_timestamp: document.getElementById('bc-use-timestamp') ? document.getElementById('bc-use-timestamp').checked : false,
     ts_pos: document.getElementById('bc-ts-pos') ? document.getElementById('bc-ts-pos').value : 'bl',
@@ -2141,6 +2143,8 @@ function loadVisPreset(name) {
   });
   const tlTitle = document.getElementById('bc-tl-title');
   if (tlTitle && p.tl_title) tlTitle.value = p.tl_title;
+  const tlColor = document.getElementById('bc-tl-color');
+  if (tlColor && p.tl_color) tlColor.value = p.tl_color;
   // timestamp
   const tsCb = document.getElementById('bc-use-timestamp');
   if (tsCb && p.use_timestamp !== undefined) {
@@ -2484,7 +2488,7 @@ function drawLivePreview() {
       const fontSize = tlSize === 'large' ? 11 : tlSize === 'small' ? 8 : 10;
       const itemH = tlSize === 'large' ? 22 : tlSize === 'small' ? 16 : 20;
       const maxShow = Math.min(playlistData.length, 8);
-      const listW = tlSize === 'large' ? 380 : 300;
+      const listW = tlSize === 'large' ? 280 : 240;
       const listH = maxShow * itemH + 28;
       const pad = 10;
       const margin = 12;
@@ -2523,9 +2527,9 @@ function drawLivePreview() {
       else if (tlFont === 'C') face = 'Times New Roman';
       else face = 'Arial';
 
-      vCtx.font = 'bold 11px ' + face;
-      vCtx.fillStyle = '#ccc';
-      vCtx.fillText(cfg.tl_title || 'Playlist', lx + pad, ly + pad + 4);
+	      vCtx.font = 'bold 11px ' + face;
+	      vCtx.fillStyle = cfg.tl_color || '#ccc';
+	      vCtx.fillText(cfg.tl_title || 'Playlist', lx + pad, ly + pad + 4);
 
       // cari lagu aktif
       const elapsed = ((performance.now() - playlistSimStart) / 1000) * 10;
@@ -2553,11 +2557,11 @@ function drawLivePreview() {
 	          vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
 	        } else {
 	          vCtx.font = fontSize + 'px ' + face;
-	          vCtx.fillStyle = '#aaa';
+	          vCtx.fillStyle = cfg.tl_color ? (cfg.tl_color === '#ffffff' ? '#aaa' : cfg.tl_color) : '#aaa';
 	          vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
 	        }
 	
-	        vCtx.fillStyle = isActive ? '#fff' : '#bbb';
+	        vCtx.fillStyle = isActive ? '#fff' : (cfg.tl_color || '#bbb');
 	        const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
 	        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
 	        vCtx.fillText(tr.title.substring(0, 35), titleX, y0 + itemH * 0.65);
