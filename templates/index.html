@@ -2539,27 +2539,27 @@ function drawLivePreview() {
       }
 
       const startIdx = Math.max(0, activeIdx - 3);
-      for (let i = 0; i < maxShow && (startIdx + i) < playlistData.length; i++) {
-        const idx = startIdx + i;
-        const tr = playlistData[idx];
+	      for (let i = 0; i < maxShow && (startIdx + i) < playlistData.length; i++) {
+	        const idx = startIdx + i;
+	        const tr = playlistData[idx];
 	        const y0 = ly + pad + 14 + i * itemH;
-        const isActive = (idx === activeIdx);
-
-        if (isActive) {
-          vCtx.fillStyle = 'rgba(60,180,80,0.3)';
-          vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
-          vCtx.fillStyle = '#0f0';
-          vCtx.font = 'bold ' + fontSize + 'px ' + face;
-          vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
-        } else {
-          vCtx.font = fontSize + 'px ' + face;
-          vCtx.fillStyle = '#aaa';
-          vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
-        }
-
-        vCtx.fillStyle = isActive ? '#fff' : '#bbb';
-        const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
-        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
+	        const isActive = (idx === activeIdx);
+	
+	        if (isActive) {
+	          vCtx.fillStyle = 'rgba(60,180,80,0.3)';
+	          vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
+	          vCtx.fillStyle = '#0f0';
+	          vCtx.font = 'bold ' + fontSize + 'px ' + face;
+	          vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
+	        } else {
+	          vCtx.font = fontSize + 'px ' + face;
+	          vCtx.fillStyle = '#aaa';
+	          vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
+	        }
+	
+	        vCtx.fillStyle = isActive ? '#fff' : '#bbb';
+	        const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
+	        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
 	        vCtx.fillText(tr.title.substring(0, 35), titleX, y0 + itemH * 0.65);
 	      }
 	    }
