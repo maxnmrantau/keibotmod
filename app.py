@@ -375,6 +375,7 @@ def get_smart_preset(audio_path):
             preset["tl_bg"] = "dark"
             preset["tl_title"] = "PLAYLIST"
             preset["tl_color"] = "#ffffff"
+            preset["tl_active"] = "none"
 
         return preset
     except:
@@ -1251,13 +1252,26 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     else:
                         mark = "   "
 
-                        num_str = f"{mark}{i+1}."
-                        title_str = tr['title'][:35]
-
-                        text_color = (255, 255, 255) if is_active else hex_to_rgb(tl_color)[::-1]
-                        cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
-                        cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
-                        shown += 1
+                    num_str = f"{mark}{i+1}."
+                    title_str = tr['title'][:35]
+                    text_color = (255, 255, 255) if is_active else hex_to_rgb(tl_color)[::-1]
+                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    # animasi active track
+                    t_y = y0
+                    t_x = pad + 46
+                    tl_anim = str(cfg.get('tl_active', 'none'))
+                    skip_draw = False
+                    if is_active:
+                        if tl_anim == 'blink' and int(f / fps * 2) % 2 == 0:
+                            skip_draw = True
+                        elif tl_anim == 'float':
+                            t_y = y0 + int(math.sin(f / fps * 4) * 3)
+                        elif tl_anim == 'scroll':
+                            scroll_off = int((f / fps * 40) % (len(title_str) * 12))
+                            t_x = pad + 46 - scroll_off
+                    if not skip_draw:
+                        cv2.putText(overlay_list, title_str, (t_x, t_y + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    shown += 1
 
                 # blend ke frame
                 roi_list = frame[list_y:list_y + list_h, list_x:list_x + list_w]
@@ -1483,7 +1497,7 @@ def background_worker():
                 if smart_preset:
                     preset = smart_preset
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "tl_color": "#ffffff", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "tl_color": "#ffffff", "tl_active": "none", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)

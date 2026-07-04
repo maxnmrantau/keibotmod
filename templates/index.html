@@ -922,7 +922,13 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	                  <select id="bc-tl-bg" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
 	                    <option value="dark">Gelap</option><option value="glass">Kaca</option><option value="minimal">Min</option><option value="transparent">Transparan</option>
 	                  </select>
-	                  <input type="color" id="bc-tl-color" value="#ffffff" style="width:24px;height:24px;border-radius:3px;border:1px solid var(--border);padding:1px;cursor:pointer;" title="Warna teks">
+		                  <input type="color" id="bc-tl-color" value="#ffffff" style="width:24px;height:24px;border-radius:3px;border:1px solid var(--border);padding:1px;cursor:pointer;" title="Warna teks">
+		                  <select id="bc-tl-active" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+		                    <option value="none">▶ Statis</option>
+		                    <option value="blink">▶ Berkedip</option>
+		                    <option value="float">▶ Naik-Turun</option>
+		                    <option value="scroll">▶ Running Teks</option>
+		                  </select>
                   <select id="bc-tl-title" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
                     <option value="PLAYLIST">PLAYLIST</option>
                     <option value="TRACKLIST">TRACKLIST</option>
@@ -2055,6 +2061,7 @@ function getVisConfig() {
     tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark',
     tl_title: document.getElementById('bc-tl-title') ? document.getElementById('bc-tl-title').value : 'PLAYLIST',
     tl_color: document.getElementById('bc-tl-color') ? document.getElementById('bc-tl-color').value : '#ffffff',
+    tl_active: document.getElementById('bc-tl-active') ? document.getElementById('bc-tl-active').value : 'none',
     // timestamp
     use_timestamp: document.getElementById('bc-use-timestamp') ? document.getElementById('bc-use-timestamp').checked : false,
     ts_pos: document.getElementById('bc-ts-pos') ? document.getElementById('bc-ts-pos').value : 'bl',
@@ -2145,6 +2152,8 @@ function loadVisPreset(name) {
   if (tlTitle && p.tl_title) tlTitle.value = p.tl_title;
   const tlColor = document.getElementById('bc-tl-color');
   if (tlColor && p.tl_color) tlColor.value = p.tl_color;
+  const tlActive = document.getElementById('bc-tl-active');
+  if (tlActive && p.tl_active) tlActive.value = p.tl_active;
   // timestamp
   const tsCb = document.getElementById('bc-use-timestamp');
   if (tsCb && p.use_timestamp !== undefined) {
@@ -2549,22 +2558,39 @@ function drawLivePreview() {
 	        const y0 = ly + pad + 14 + i * itemH;
 	        const isActive = (idx === activeIdx);
 	
-	        if (isActive) {
-	          vCtx.fillStyle = 'rgba(60,180,80,0.3)';
-	          vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
-	          vCtx.fillStyle = '#0f0';
-	          vCtx.font = 'bold ' + fontSize + 'px ' + face;
-	          vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
-	        } else {
+		        if (isActive) {
+		          const anim = cfg.tl_active || 'none';
+		          let skip = false;
+		          if (anim === 'blink' && Math.floor(timeTick / 20) % 2 === 0) skip = true;
+		          if (!skip) {
+		            vCtx.fillStyle = 'rgba(60,180,80,0.3)';
+		            vCtx.fillRect(lx + pad - 2, y0, listW - pad * 2 + 4, itemH - 2);
+		            vCtx.fillStyle = '#0f0';
+		            vCtx.font = 'bold ' + fontSize + 'px ' + face;
+		            vCtx.fillText('▶', lx + pad + 2, y0 + itemH * 0.65);
+		          }
+		        } else {
 	          vCtx.font = fontSize + 'px ' + face;
 	          vCtx.fillStyle = cfg.tl_color ? (cfg.tl_color === '#ffffff' ? '#aaa' : cfg.tl_color) : '#aaa';
 	          vCtx.fillText((idx+1) + '.', lx + pad + 2, y0 + itemH * 0.65);
 	        }
 	
+	        let activeY = y0;
+	        const anim = cfg.tl_active || 'none';
+	        if (isActive && anim === 'float') activeY = y0 + Math.sin(timeTick * 0.06) * 4;
 	        vCtx.fillStyle = isActive ? '#fff' : (cfg.tl_color || '#bbb');
-	        const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
+	        let titleX = isActive ? lx + pad + 18 : lx + pad + 22;
+	        if (isActive && anim === 'scroll') {
+	          const txt = tr.title.substring(0, 35);
+	          const maxW = listW - pad - 30;
+	          vCtx.save();
+	          vCtx.beginPath(); vCtx.rect(lx + pad + 16, activeY - itemH * 0.3, maxW, itemH); vCtx.clip();
+	          const scrollOff = ((timeTick * 3) % (txt.length * 10));
+	          titleX = lx + pad + 18 - scrollOff;
+	        }
 	        vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
-	        vCtx.fillText(tr.title.substring(0, 35), titleX, y0 + itemH * 0.65);
+	        vCtx.fillText(tr.title.substring(0, 35), titleX, activeY + itemH * 0.65);
+	        if (isActive && anim === 'scroll') vCtx.restore();
 	      }
 	    }
 
