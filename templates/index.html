@@ -2369,7 +2369,10 @@ function drawLivePreview() {
 
       // posisi dasar
       const margin = 20;
-      const wmFont = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+      const wmFace = cfg.wm_font === 'M' ? '"Segoe UI", Arial' : 
+                     cfg.wm_font === 'S' ? '"Segoe UI", sans-serif' :
+                     cfg.wm_font === 'I' ? 'Impact, Arial Black' : 'Georgia, "Times New Roman"';
+      const wmFont = 'bold ' + fs + 'px ' + wmFace;
       vCtx.font = wmFont;
       const wmW = vCtx.measureText(txt).width;
       const wmH = fs;
