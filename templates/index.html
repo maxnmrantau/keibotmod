@@ -896,35 +896,51 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
           </div>
 
           <!-- ════════ TRACK LIST SETTINGS ════════ -->
-          <div id="vis-tracklist-wrap" style="display:none; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; max-width:800px; margin-left:auto; margin-right:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">📋 Track List Settings</span>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-              <select id="bc-tl-font" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                <option value="M">Modern (Arial)</option>
-                <option value="S">Sans (Segoe UI)</option>
-                <option value="I">Bold Impact</option>
-                <option value="C">Classic (Times)</option>
-              </select>
-              <select id="bc-tl-size" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                <option value="small">Kecil</option>
-                <option value="medium" selected>Sedang</option>
-                <option value="large">Besar</option>
-              </select>
-              <select id="bc-tl-position" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                <option value="tr" selected>↗ Kanan Atas</option>
-                <option value="tl">↖ Kiri Atas</option>
-                <option value="br">↘ Kanan Bawah</option>
-                <option value="bl">↙ Kiri Bawah</option>
-                <option value="cr">◫ Tengah Kanan</option>
-                <option value="cl">◪ Tengah Kiri</option>
-              </select>
-              <select id="bc-tl-bg" style="padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                <option value="dark">Gelap (default)</option>
-                <option value="glass">Kaca transparan</option>
-                <option value="minimal">Minimal</option>
-              </select>
+          <div id="vis-tracklist-wrap" style="display:none; margin-bottom:10px; max-width:800px; margin-left:auto; margin-right:auto;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:280px; border:1px solid var(--border); border-radius:8px; padding:10px; background:var(--card);">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <select id="bc-tl-font" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="M">Modern</option>
+                    <option value="S">Sans</option>
+                    <option value="I">Impact</option>
+                    <option value="C">Classic</option>
+                  </select>
+                  <select id="bc-tl-size" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="small">Kecil</option>
+                    <option value="medium" selected>Sedang</option>
+                    <option value="large">Besar</option>
+                  </select>
+                  <select id="bc-tl-position" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="tr">↗ KA</option><option value="tl">↖ KA</option><option value="br">↘ KB</option>
+                    <option value="bl">↙ KB</option><option value="cr">◫ TK</option><option value="cl">◪ TK</option>
+                  </select>
+                  <select id="bc-tl-bg" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="dark">Gelap</option><option value="glass">Kaca</option><option value="minimal">Min</option>
+                  </select>
+                  <select id="bc-tl-title" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="PLAYLIST">PLAYLIST</option>
+                    <option value="TRACKLIST">TRACKLIST</option>
+                    <option value="TRACKS">TRACKS</option>
+                    <option value="NOW PLAYING">NOW PLAYING</option>
+                    <option value="SONG LIST">SONG LIST</option>
+                    <option value="MUSIC SELECTION">MUSIC SELECTION</option>
+                    <option value="MUSIC LINEUP">MUSIC LINEUP</option>
+                    <option value="SONG COLLECTION">SONG COLLECTION</option>
+                    <option value="MUSIC COLLECTION">MUSIC COLLECTION</option>
+                    <option value="FEATURED TRACKS">FEATURED TRACKS</option>
+                  </select>
+                </div>
+              </div>
+              <div id="vis-playlist-panel" style="flex:1; min-width:220px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--card2);">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);">
+                  <span style="font-size:10px;font-weight:700;color:var(--text);letter-spacing:.03em;">📋 Playlist Preview</span>
+                  <span id="pl-count" style="font-size:9px;color:var(--muted);font-weight:600;">0</span>
+                </div>
+                <div id="pl-list" style="max-height:110px;overflow-y:auto;padding:3px;">
+                  <div style="text-align:center;padding:12px;color:var(--muted);font-size:10px;">Pilih channel di Step 1</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -938,16 +954,6 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <img id="preview_bg_img" class="preview-bg-img" alt="Preview Background">
                 <div class="preview-overlay"></div>
                 <canvas id="preset_canvas"></canvas>
-            </div>
-
-            <div id="vis-playlist-panel" style="max-width:800px;margin:0 auto 12px auto;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card2);">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);">
-                <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">📋 Playlist Preview</span>
-                <span id="pl-count" style="font-size:10px;color:var(--muted);font-weight:600;">0 lagu</span>
-              </div>
-              <div id="pl-list" style="max-height:130px;overflow-y:auto;padding:4px;">
-                <div style="text-align:center;padding:16px;color:var(--muted);font-size:11px;">Pilih channel di Step 1 untuk melihat daftar lagu</div>
-              </div>
             </div>
 
             <div class="g3" style="margin-bottom:8px">
@@ -2014,7 +2020,8 @@ function getVisConfig() {
     tl_font: document.getElementById('bc-tl-font') ? document.getElementById('bc-tl-font').value : 'M',
     tl_size: document.getElementById('bc-tl-size') ? document.getElementById('bc-tl-size').value : 'medium',
     tl_position: document.getElementById('bc-tl-position') ? document.getElementById('bc-tl-position').value : 'tr',
-    tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark'
+    tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark',
+    tl_title: document.getElementById('bc-tl-title') ? document.getElementById('bc-tl-title').value : 'PLAYLIST'
   };
 }
 
@@ -2093,6 +2100,8 @@ function loadVisPreset(name) {
     const key = id.replace('bc-tl-', 'tl_');
     if (el && p[key]) el.value = p[key];
   });
+  const tlTitle = document.getElementById('bc-tl-title');
+  if (tlTitle && p.tl_title) tlTitle.value = p.tl_title;
   const wmText = document.getElementById('bc-wm-text');
   if (wmText && p.wm_text) wmText.value = p.wm_text;
   const wmColor = document.getElementById('bc-wm-color');
@@ -2460,7 +2469,7 @@ function drawLivePreview() {
 
       vCtx.font = 'bold 11px ' + face;
       vCtx.fillStyle = '#ccc';
-      vCtx.fillText('Playlist', lx + pad, ly + pad + 4);
+      vCtx.fillText(cfg.tl_title || 'Playlist', lx + pad, ly + pad + 4);
 
       // cari lagu aktif
       const elapsed = ((performance.now() - playlistSimStart) / 1000) * 10;

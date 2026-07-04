@@ -373,6 +373,7 @@ def get_smart_preset(audio_path):
             preset["tl_size"] = "medium"
             preset["tl_position"] = "tr"
             preset["tl_bg"] = "dark"
+            preset["tl_title"] = "PLAYLIST"
 
         return preset
     except:
@@ -1232,7 +1233,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.82
 
                 # header
-                cv2.putText(overlay_list, "Playlist", (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
+                cv2.putText(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
 
                 start_idx = max(0, cur_idx - 4)
                 shown = 0
@@ -1453,7 +1454,7 @@ def background_worker():
                 if smart_preset:
                     preset = smart_preset
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark"}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST"}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)
