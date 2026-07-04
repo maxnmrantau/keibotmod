@@ -1224,9 +1224,10 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.55
                 elif tl_bg == 'minimal':
                     cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (0, 0, 0), -1)
-                    # hanya border tipis
                     cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (50, 50, 50), 1)
                     blend_alpha = 0.40
+                elif tl_bg == 'transparent':
+                    blend_alpha = 0.0  # langsung gambar ke frame
                 else:  # dark
                     cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (15, 10, 10), -1)
                     cv2.rectangle(overlay_list, (0, 0), (list_w, list_h), (60, 50, 50), 1)
@@ -1239,7 +1240,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 shown = 0
                 for i in range(start_idx, min(len(tracks), start_idx + max_show)):
                     tr = tracks[i]
-                    y0 = pad + 20 + shown * item_h
+                    y0 = pad + 14 + shown * item_h
                     is_active = (i == cur_idx)
 
                     if is_active:
@@ -1248,19 +1249,18 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     else:
                         mark = "   "
 
-                    num_str = f"{mark}{i+1}."
-                    title_str = tr['title'][:22]
-                    dur_str = f"{int(tr['duration']//60)}:{int(tr['duration']%60):02d}"
+                        num_str = f"{mark}{i+1}."
+                        title_str = tr['title'][:22]
 
-                    text_color = (255, 255, 255) if is_active else (180, 180, 180)
-                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
-                    cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
-                    cv2.putText(overlay_list, dur_str, (list_w - pad - 40, y0 + 14), tfont, font_s, (150, 150, 150), 1, cv2.LINE_AA)
-                    shown += 1
+                        text_color = (255, 255, 255) if is_active else (180, 180, 180)
+                        cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                        cv2.putText(overlay_list, title_str, (pad + 46, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                        shown += 1
 
                 # blend ke frame
                 roi_list = frame[list_y:list_y + list_h, list_x:list_x + list_w]
-                cv2.addWeighted(overlay_list, blend_alpha, roi_list, 1.0 - blend_alpha, 0, roi_list)
+                if blend_alpha > 0:
+                    cv2.addWeighted(overlay_list, blend_alpha, roi_list, 1.0 - blend_alpha, 0, roi_list)
 
             # ── WATERMARK TEKS ──
             if cfg.get('use_watermark', False):
@@ -1339,6 +1339,27 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06 * pulse, wm_color_bgr, thickness, cv2.LINE_AA)
                     else:
                         cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06, wm_color_bgr, thickness, cv2.LINE_AA)
+
+            # ── TIMESTAMP ──
+            if cfg.get('use_timestamp', False):
+                ts_size = int(cfg.get('ts_size', 20))
+                ts_pos = cfg.get('ts_pos', 'bl')
+                ts_font_name = cfg.get('ts_font', 'M')
+                ts_color_hex = cfg.get('ts_color', '#ffffff')
+                ts_color = hex_to_rgb(ts_color_hex)
+                ts_color_bgr = (ts_color[2], ts_color[1], ts_color[0])
+                ts_font_map = {'M': cv2.FONT_HERSHEY_DUPLEX, 'S': cv2.FONT_HERSHEY_SIMPLEX, 'I': cv2.FONT_HERSHEY_TRIPLEX, 'C': cv2.FONT_HERSHEY_PLAIN}
+                ts_font = ts_font_map.get(ts_font_name, cv2.FONT_HERSHEY_SIMPLEX)
+                ts_margin = 20
+                total_sec_int = int(f / fps)
+                ts_text = f"{total_sec_int//3600:02d}:{(total_sec_int%3600)//60:02d}:{total_sec_int%60:02d}" if total_sec_int >= 3600 else f"{total_sec_int//60:02d}:{total_sec_int%60:02d}"
+                (tw, th), _ = cv2.getTextSize(ts_text, ts_font, ts_size * 0.05, 1)
+                if ts_pos == 'tl': tx, ty = ts_margin, ts_margin + th
+                elif ts_pos == 'tr': tx, ty = w - tw - ts_margin, ts_margin + th
+                elif ts_pos == 'br': tx, ty = w - tw - ts_margin, h - ts_margin
+                else: tx, ty = ts_margin, h - ts_margin  # bl default
+                cv2.putText(frame, ts_text, (tx+2, ty+2), ts_font, ts_size * 0.05, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(frame, ts_text, (tx, ty), ts_font, ts_size * 0.05, ts_color_bgr, 1, cv2.LINE_AA)
 
             proc.stdin.write(frame.tobytes())
             
@@ -1454,7 +1475,7 @@ def background_worker():
                 if smart_preset:
                     preset = smart_preset
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST"}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff"}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)

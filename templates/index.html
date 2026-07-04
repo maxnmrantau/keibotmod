@@ -830,24 +830,28 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	              </select>
 	            </div>
 	          </div>
-	          <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center; justify-content:center; margin-bottom:8px;">
-	            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-	              <input type="checkbox" id="bc-use-beat-pulse" style="width:13px;height:13px;accent-color:var(--accent);">
-	              <span style="font-size:10px;font-weight:700;">💫 Pulse</span>
-	            </label>
-	            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-	              <input type="checkbox" id="bc-use-floating-card" checked style="width:13px;height:13px;accent-color:var(--accent);">
-	              <span style="font-size:10px;font-weight:700;">🏷️ Card</span>
-	            </label>
-	            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-	              <input type="checkbox" id="bc-use-tracklist" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
-	              <span style="font-size:10px;font-weight:700;">📋 Playlist</span>
-	            </label>
-	            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
-	              <input type="checkbox" id="bc-use-watermark" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'flex':'none'">
-	              <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
-	            </label>
-	          </div>
+		          <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center; justify-content:center; margin-bottom:8px;">
+		            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+		              <input type="checkbox" id="bc-use-beat-pulse" style="width:13px;height:13px;accent-color:var(--accent);">
+		              <span style="font-size:10px;font-weight:700;">💫 Beat Pulse</span>
+		            </label>
+		            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+		              <input type="checkbox" id="bc-use-floating-card" checked style="width:13px;height:13px;accent-color:var(--accent);">
+		              <span style="font-size:10px;font-weight:700;">🏷️ Floating Card</span>
+		            </label>
+		            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+		              <input type="checkbox" id="bc-use-tracklist" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
+		              <span style="font-size:10px;font-weight:700;">📋 Playlist</span>
+		            </label>
+		            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+		              <input type="checkbox" id="bc-use-watermark" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'flex':'none'">
+		              <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
+		            </label>
+		            <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+		              <input type="checkbox" id="bc-use-timestamp" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-ts-wrap').style.display=this.checked?'flex':'none'">
+		              <span style="font-size:10px;font-weight:700;">⏱️ Timestamp</span>
+		            </label>
+		          </div>
 
           <!-- ════════ WATERMARK SETTINGS ════════ -->
           <div id="vis-watermark-wrap" style="display:none; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; max-width:800px; margin-left:auto; margin-right:auto;">
@@ -915,9 +919,9 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                     <option value="tr">↗ KA</option><option value="tl">↖ KA</option><option value="br">↘ KB</option>
                     <option value="bl">↙ KB</option><option value="cr">◫ TK</option><option value="cl">◪ TK</option>
                   </select>
-                  <select id="bc-tl-bg" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                    <option value="dark">Gelap</option><option value="glass">Kaca</option><option value="minimal">Min</option>
-                  </select>
+	                  <select id="bc-tl-bg" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	                    <option value="dark">Gelap</option><option value="glass">Kaca</option><option value="minimal">Min</option><option value="transparent">Transparan</option>
+	                  </select>
                   <select id="bc-tl-title" style="padding:4px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
                     <option value="PLAYLIST">PLAYLIST</option>
                     <option value="TRACKLIST">TRACKLIST</option>
@@ -942,9 +946,27 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 </div>
               </div>
             </div>
-          </div>
+	          </div>
 
-          <div id="vis-manual-wrap">
+	          <!-- ════════ TIMESTAMP SETTINGS ════════ -->
+	          <div id="vis-ts-wrap" style="display:none; align-items:center; gap:6px; flex-wrap:wrap; border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:10px; max-width:800px; margin-left:auto; margin-right:auto;">
+	            <span style="font-size:10px;font-weight:700;color:var(--text);">⏱️</span>
+	            <select id="bc-ts-pos" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	              <option value="bl">Kiri Bawah</option><option value="br">Kanan Bawah</option>
+	              <option value="tl">Kiri Atas</option><option value="tr">Kanan Atas</option>
+	            </select>
+	            <select id="bc-ts-font" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	              <option value="M">Modern</option><option value="S">Sans</option><option value="I">Impact</option><option value="C">Classic</option>
+	            </select>
+	            <select id="bc-ts-size" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	              <option value="16">16px</option><option value="20" selected>20px</option><option value="24">24px</option><option value="32">32px</option>
+	            </select>
+	            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:4px;">
+	              <input type="color" id="bc-ts-color" value="#ffffff" style="width:24px;height:24px;border-radius:3px;border:1px solid var(--border);padding:1px;">
+	            </label>
+	          </div>
+
+	          <div id="vis-manual-wrap">
             <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <div style="font-size:11px; font-weight:700; color:var(--text); letter-spacing:.08em;">LIVE PREVIEW VISUALIZER</div>
             </div>
@@ -2021,7 +2043,13 @@ function getVisConfig() {
     tl_size: document.getElementById('bc-tl-size') ? document.getElementById('bc-tl-size').value : 'medium',
     tl_position: document.getElementById('bc-tl-position') ? document.getElementById('bc-tl-position').value : 'tr',
     tl_bg: document.getElementById('bc-tl-bg') ? document.getElementById('bc-tl-bg').value : 'dark',
-    tl_title: document.getElementById('bc-tl-title') ? document.getElementById('bc-tl-title').value : 'PLAYLIST'
+    tl_title: document.getElementById('bc-tl-title') ? document.getElementById('bc-tl-title').value : 'PLAYLIST',
+    // timestamp
+    use_timestamp: document.getElementById('bc-use-timestamp') ? document.getElementById('bc-use-timestamp').checked : false,
+    ts_pos: document.getElementById('bc-ts-pos') ? document.getElementById('bc-ts-pos').value : 'bl',
+    ts_font: document.getElementById('bc-ts-font') ? document.getElementById('bc-ts-font').value : 'M',
+    ts_size: document.getElementById('bc-ts-size') ? parseInt(document.getElementById('bc-ts-size').value) : 20,
+    ts_color: document.getElementById('bc-ts-color') ? document.getElementById('bc-ts-color').value : '#ffffff'
   };
 }
 
@@ -2102,6 +2130,19 @@ function loadVisPreset(name) {
   });
   const tlTitle = document.getElementById('bc-tl-title');
   if (tlTitle && p.tl_title) tlTitle.value = p.tl_title;
+  // timestamp
+  const tsCb = document.getElementById('bc-use-timestamp');
+  if (tsCb && p.use_timestamp !== undefined) {
+    tsCb.checked = !!p.use_timestamp;
+    document.getElementById('vis-ts-wrap').style.display = tsCb.checked ? 'flex' : 'none';
+  }
+  ['bc-ts-pos', 'bc-ts-font', 'bc-ts-size'].forEach(id => {
+    const el = document.getElementById(id);
+    const key = id.replace('bc-ts-', 'ts_');
+    if (el && p[key]) el.value = p[key];
+  });
+  const tsColor = document.getElementById('bc-ts-color');
+  if (tsColor && p.ts_color) tsColor.value = p.ts_color;
   const wmText = document.getElementById('bc-wm-text');
   if (wmText && p.wm_text) wmText.value = p.wm_text;
   const wmColor = document.getElementById('bc-wm-color');
@@ -2445,20 +2486,24 @@ function drawLivePreview() {
       else if (tlPos === 'cr') { lx = cw - listW - margin; ly = (ch - listH) / 2; }
       else { lx = cw - listW - margin; ly = margin; } // tr default
 
-      // bg style
-      if (tlBg === 'glass') {
-        vCtx.fillStyle = 'rgba(20,15,15,0.55)';
-        vCtx.strokeStyle = 'rgba(80,70,70,0.4)';
-      } else if (tlBg === 'minimal') {
-        vCtx.fillStyle = 'rgba(0,0,0,0.35)';
-        vCtx.strokeStyle = 'rgba(50,50,50,0.3)';
-      } else { // dark
-        vCtx.fillStyle = 'rgba(15,10,10,0.8)';
-        vCtx.strokeStyle = 'rgba(60,50,50,0.6)';
-      }
-      vCtx.fillRect(lx, ly, listW, listH);
-      vCtx.lineWidth = 1;
-      vCtx.strokeRect(lx, ly, listW, listH);
+	      // bg style
+	      if (tlBg === 'glass') {
+	        vCtx.fillStyle = 'rgba(20,15,15,0.55)';
+	        vCtx.strokeStyle = 'rgba(80,70,70,0.4)';
+	      } else if (tlBg === 'minimal') {
+	        vCtx.fillStyle = 'rgba(0,0,0,0.35)';
+	        vCtx.strokeStyle = 'rgba(50,50,50,0.3)';
+	      } else if (tlBg === 'transparent') {
+	        // no fill, no stroke - only text
+	      } else { // dark
+	        vCtx.fillStyle = 'rgba(15,10,10,0.8)';
+	        vCtx.strokeStyle = 'rgba(60,50,50,0.6)';
+	      }
+	      if (tlBg !== 'transparent') {
+	        vCtx.fillRect(lx, ly, listW, listH);
+	        vCtx.lineWidth = 1;
+	        vCtx.strokeRect(lx, ly, listW, listH);
+	      }
 
       // font face
       let face = 'Arial';
@@ -2486,7 +2531,7 @@ function drawLivePreview() {
       for (let i = 0; i < maxShow && (startIdx + i) < playlistData.length; i++) {
         const idx = startIdx + i;
         const tr = playlistData[idx];
-        const y0 = ly + pad + 20 + i * itemH;
+	        const y0 = ly + pad + 14 + i * itemH;
         const isActive = (idx === activeIdx);
 
         if (isActive) {
@@ -2504,17 +2549,38 @@ function drawLivePreview() {
         vCtx.fillStyle = isActive ? '#fff' : '#bbb';
         const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
         vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
-        vCtx.fillText(tr.title.substring(0, 20), titleX, y0 + itemH * 0.65);
+	        vCtx.fillText(tr.title.substring(0, 22), titleX, y0 + itemH * 0.65);
+	      }
+	    }
 
-        const durStr = Math.floor(tr.duration/60) + ':' + String(Math.floor(tr.duration%60)).padStart(2,'0');
-        vCtx.fillStyle = '#999';
-        vCtx.font = fontSize + 'px ' + face;
-        vCtx.fillText(durStr, lx + listW - pad - 30, y0 + itemH * 0.65);
-      }
-    }
+	    // ── timestamp preview ──
+	    if (cfg.use_timestamp) {
+	      const tsSize = cfg.ts_size || 20;
+	      const tsPos = cfg.ts_pos || 'bl';
+	      const tsColor = cfg.ts_color || '#ffffff';
+	      const face = cfg.ts_font === 'M' ? '"Segoe UI", Arial' : cfg.ts_font === 'S' ? '"Segoe UI", sans-serif' :
+	                   cfg.ts_font === 'I' ? 'Impact' : 'Georgia, "Times New Roman"';
+	      const margin = 12;
+	      const sec = Math.floor(timeTick / 3);
+	      const hh = Math.floor(sec / 3600);
+	      const mm = Math.floor((sec % 3600) / 60);
+	      const ss = sec % 60;
+	      const tsText = hh > 0 ? `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}` : `${mm}:${String(ss).padStart(2,'0')}`;
+	      vCtx.font = `bold ${tsSize}px ${face}`;
+	      vCtx.textAlign = 'center'; vCtx.textBaseline = 'middle';
+	      let tsx = cw/2, tsy = ch - margin;
+	      if (tsPos === 'tl') { tsx = margin + 40; tsy = margin + 10; vCtx.textAlign = 'left'; }
+	      else if (tsPos === 'tr') { tsx = cw - margin - 40; tsy = margin + 10; vCtx.textAlign = 'right'; }
+	      else if (tsPos === 'br') { tsx = cw - margin - 40; tsy = ch - margin; vCtx.textAlign = 'right'; }
+	      else { tsx = margin + 40; tsy = ch - margin; vCtx.textAlign = 'left'; }
+	      vCtx.fillStyle = 'rgba(0,0,0,0.5)';
+	      vCtx.fillText(tsText, tsx+1, tsy+1);
+	      vCtx.fillStyle = tsColor;
+	      vCtx.fillText(tsText, tsx, tsy);
+	    }
 
-    // ── playlist tracker (highlight lagu aktif) ──
-    updatePlaylistTracker();
+	    // ── playlist tracker (highlight lagu aktif) ──
+	    updatePlaylistTracker();
 
     timeTick++;
   }
