@@ -549,7 +549,7 @@ class VisualEngine:
         # sparkle / particles
         if p_amt > 0:
             p_type = cfg.get('particle_type', 'sparkle')
-            self._draw_particles(frame, vol, is_hit, p_amt, p_spd, w, h, p_type)
+            self._draw_particles(frame, vol, is_hit, p_amt, p_spd, w, h, p_type, cfg)
 
         return frame
 
@@ -930,15 +930,21 @@ class VisualEngine:
     # ═══════════════════════════════════════════════════════════
     #  SPARKLE / PARTICLES  (multi-tipe)
     # ═══════════════════════════════════════════════════════════
-    def _draw_particles(self, frame, vol, is_hit, p_amt, p_spd, w, h, p_type='sparkle'):
+    def _draw_particles(self, frame, vol, is_hit, p_amt, p_spd, w, h, p_type='sparkle', cfg=None):
+        # particle settings
+        sz_mult = {'small': 0.6, 'large': 1.5}.get(cfg.get('part_size', 'medium') if cfg else 'medium', 1.0)
+        life_mult = {'short': 0.5, 'long': 1.8}.get(cfg.get('part_life', 'medium') if cfg else 'medium', 1.0)
+        dens_mult = {'low': 0.5, 'high': 1.8}.get(cfg.get('part_density', 'medium') if cfg else 'medium', 1.0)
+        part_alpha = float(cfg.get('part_opacity', 1.0)) if cfg else 1.0
+
         # spawn particles
         if is_hit and vol > 1.5:
-            for _ in range(p_amt):
+            for _ in range(max(1, min(int(p_amt * dens_mult), 15))):
                 if p_type == 'fireworks':
                     self.particles.append([
                         np.random.randint(w*0.3, w*0.7), np.random.randint(h*0.6, h*0.9),
                         np.random.uniform(-6, 6), np.random.uniform(-8, -2),
-                        np.random.randint(2, 5), np.random.randint(30, 60), 0, 'fw'
+	                        int((np.random.randint(2, 5)) * sz_mult), int((30 + random.random() * 30) * life_mult), 0, 'fw'
                     ])
                 elif p_type == 'trail':
                     self.particles.append([
