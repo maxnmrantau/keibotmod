@@ -1250,7 +1250,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         mark = "   "
 
                         num_str = f"{mark}{i+1}."
-                        title_str = tr['title'][:22]
+                        title_str = tr['title'][:35]
 
                         text_color = (255, 255, 255) if is_active else (180, 180, 180)
                         cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
@@ -1346,18 +1346,24 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 ts_pos = cfg.get('ts_pos', 'bl')
                 ts_font_name = cfg.get('ts_font', 'M')
                 ts_color_hex = cfg.get('ts_color', '#ffffff')
+                ts_offx = float(cfg.get('ts_offx', 50)) / 100.0
+                ts_offy = float(cfg.get('ts_offy', 90)) / 100.0
                 ts_color = hex_to_rgb(ts_color_hex)
                 ts_color_bgr = (ts_color[2], ts_color[1], ts_color[0])
-                ts_font_map = {'M': cv2.FONT_HERSHEY_DUPLEX, 'S': cv2.FONT_HERSHEY_SIMPLEX, 'I': cv2.FONT_HERSHEY_TRIPLEX, 'C': cv2.FONT_HERSHEY_PLAIN}
+                ts_font_map = {'M': cv2.FONT_HERSHEY_DUPLEX, 'S': cv2.FONT_HERSHEY_SIMPLEX, 'I': cv2.FONT_HERSHEY_TRIPLEX, 
+                               'C': cv2.FONT_HERSHEY_PLAIN, 'D': cv2.FONT_HERSHEY_DUPLEX, 'O': cv2.FONT_HERSHEY_PLAIN}
                 ts_font = ts_font_map.get(ts_font_name, cv2.FONT_HERSHEY_SIMPLEX)
                 ts_margin = 20
                 total_sec_int = int(f / fps)
-                ts_text = f"{total_sec_int//3600:02d}:{(total_sec_int%3600)//60:02d}:{total_sec_int%60:02d}" if total_sec_int >= 3600 else f"{total_sec_int//60:02d}:{total_sec_int%60:02d}"
+                ts_text = f"{total_sec_int//3600}:{total_sec_int%3600//60:02d}:{total_sec_int%60:02d}"
                 (tw, th), _ = cv2.getTextSize(ts_text, ts_font, ts_size * 0.05, 1)
-                if ts_pos == 'tl': tx, ty = ts_margin, ts_margin + th
-                elif ts_pos == 'tr': tx, ty = w - tw - ts_margin, ts_margin + th
-                elif ts_pos == 'br': tx, ty = w - tw - ts_margin, h - ts_margin
-                else: tx, ty = ts_margin, h - ts_margin  # bl default
+                # posisi
+                base_tx = {'tl': ts_margin, 'bl': ts_margin, 'ct': int(w * ts_offx), 'cb': int(w * ts_offx)}
+                base_ty = {'tl': ts_margin + th, 'ct': ts_margin + th, 'bl': h - ts_margin, 'cb': h - ts_margin}
+                tx = base_tx.get(ts_pos, ts_margin)
+                ty = base_ty.get(ts_pos, h - ts_margin)
+                if ts_pos in ('tr', 'br'): tx = w - tw - ts_margin
+                if ts_pos in ('br',): ty = h - ts_margin
                 cv2.putText(frame, ts_text, (tx+2, ty+2), ts_font, ts_size * 0.05, (0, 0, 0), 1, cv2.LINE_AA)
                 cv2.putText(frame, ts_text, (tx, ty), ts_font, ts_size * 0.05, ts_color_bgr, 1, cv2.LINE_AA)
 
@@ -1475,7 +1481,7 @@ def background_worker():
                 if smart_preset:
                     preset = smart_preset
             if not isinstance(preset, dict):
-                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff"}
+                preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
 
             preset['yt_id'] = yt_id 
             preset['use_floating_card'] = task.get('use_floating_card', False)

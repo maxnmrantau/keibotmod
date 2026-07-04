@@ -952,18 +952,27 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	          <div id="vis-ts-wrap" style="display:none; align-items:center; gap:6px; flex-wrap:wrap; border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:10px; max-width:800px; margin-left:auto; margin-right:auto;">
 	            <span style="font-size:10px;font-weight:700;color:var(--text);">⏱️</span>
 	            <select id="bc-ts-pos" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-	              <option value="bl">Kiri Bawah</option><option value="br">Kanan Bawah</option>
-	              <option value="tl">Kiri Atas</option><option value="tr">Kanan Atas</option>
-	            </select>
-	            <select id="bc-ts-font" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-	              <option value="M">Modern</option><option value="S">Sans</option><option value="I">Impact</option><option value="C">Classic</option>
-	            </select>
-	            <select id="bc-ts-size" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-	              <option value="16">16px</option><option value="20" selected>20px</option><option value="24">24px</option><option value="32">32px</option>
-	            </select>
-	            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:4px;">
-	              <input type="color" id="bc-ts-color" value="#ffffff" style="width:24px;height:24px;border-radius:3px;border:1px solid var(--border);padding:1px;">
-	            </label>
+		              <option value="bl">Kiri Bwh</option><option value="br">Kanan Bwh</option>
+		              <option value="tl">Kiri Atas</option><option value="tr">Kanan Atas</option>
+		              <option value="cb">Tengah Bwh</option><option value="ct">Tengah Atas</option>
+		            </select>
+		            <select id="bc-ts-font" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+		              <option value="M">Modern</option><option value="S">Sans</option><option value="I">Impact</option><option value="C">Classic</option><option value="D">Digital</option><option value="O">Monospace</option>
+		            </select>
+		            <select id="bc-ts-size" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+		              <option value="16">16px</option><option value="20" selected>20px</option><option value="24">24px</option><option value="32">32px</option><option value="48">48px</option>
+		            </select>
+		            <div style="display:flex; align-items:center; gap:4px; margin-left:4px;">
+		              <span style="font-size:9px;color:var(--muted);font-weight:600;">X</span>
+		              <input type="range" id="bc-ts-offx" min="0" max="100" value="50" style="width:50px;height:4px;" oninput="document.getElementById('ts-ox').textContent=this.value+'%'">
+		              <span id="ts-ox" style="font-size:9px;color:var(--muted);min-width:25px;">50%</span>
+		              <span style="font-size:9px;color:var(--muted);font-weight:600;">Y</span>
+		              <input type="range" id="bc-ts-offy" min="0" max="100" value="90" style="width:50px;height:4px;" oninput="document.getElementById('ts-oy').textContent=this.value+'%'">
+              <span id="ts-oy" style="font-size:9px;color:var(--muted);min-width:25px;">90%</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:2px;">
+              <input type="color" id="bc-ts-color" value="#ffffff" style="width:22px;height:22px;border-radius:3px;border:1px solid var(--border);padding:1px;">
+            </label>
 	          </div>
 
 	          <div id="vis-manual-wrap">
@@ -2049,7 +2058,9 @@ function getVisConfig() {
     ts_pos: document.getElementById('bc-ts-pos') ? document.getElementById('bc-ts-pos').value : 'bl',
     ts_font: document.getElementById('bc-ts-font') ? document.getElementById('bc-ts-font').value : 'M',
     ts_size: document.getElementById('bc-ts-size') ? parseInt(document.getElementById('bc-ts-size').value) : 20,
-    ts_color: document.getElementById('bc-ts-color') ? document.getElementById('bc-ts-color').value : '#ffffff'
+    ts_color: document.getElementById('bc-ts-color') ? document.getElementById('bc-ts-color').value : '#ffffff',
+    ts_offx: document.getElementById('bc-ts-offx') ? parseFloat(document.getElementById('bc-ts-offx').value) : 50,
+    ts_offy: document.getElementById('bc-ts-offy') ? parseFloat(document.getElementById('bc-ts-offy').value) : 90
   };
 }
 
@@ -2473,7 +2484,7 @@ function drawLivePreview() {
       const fontSize = tlSize === 'large' ? 11 : tlSize === 'small' ? 8 : 10;
       const itemH = tlSize === 'large' ? 22 : tlSize === 'small' ? 16 : 20;
       const maxShow = Math.min(playlistData.length, 8);
-      const listW = tlSize === 'large' ? 320 : 260;
+      const listW = tlSize === 'large' ? 380 : 300;
       const listH = maxShow * itemH + 28;
       const pad = 10;
       const margin = 12;
@@ -2549,7 +2560,7 @@ function drawLivePreview() {
         vCtx.fillStyle = isActive ? '#fff' : '#bbb';
         const titleX = isActive ? lx + pad + 18 : lx + pad + 22;
         vCtx.font = (isActive ? 'bold ' : '') + fontSize + 'px ' + face;
-	        vCtx.fillText(tr.title.substring(0, 22), titleX, y0 + itemH * 0.65);
+	        vCtx.fillText(tr.title.substring(0, 35), titleX, y0 + itemH * 0.65);
 	      }
 	    }
 
@@ -2558,21 +2569,27 @@ function drawLivePreview() {
 	      const tsSize = cfg.ts_size || 20;
 	      const tsPos = cfg.ts_pos || 'bl';
 	      const tsColor = cfg.ts_color || '#ffffff';
-	      const face = cfg.ts_font === 'M' ? '"Segoe UI", Arial' : cfg.ts_font === 'S' ? '"Segoe UI", sans-serif' :
-	                   cfg.ts_font === 'I' ? 'Impact' : 'Georgia, "Times New Roman"';
-	      const margin = 12;
+	      const tsOffX = (cfg.ts_offx !== undefined ? cfg.ts_offx : 50) / 100;
+	      const tsOffY = (cfg.ts_offy !== undefined ? cfg.ts_offy : 90) / 100;
+	      const face = cfg.ts_font === 'S' ? '"Segoe UI", sans-serif' : cfg.ts_font === 'I' ? 'Impact' :
+	                   cfg.ts_font === 'C' ? 'Georgia, serif' : cfg.ts_font === 'D' ? '"Courier New", monospace' :
+	                   cfg.ts_font === 'O' ? 'Consolas, monospace' : '"Segoe UI", Arial';
 	      const sec = Math.floor(timeTick / 3);
 	      const hh = Math.floor(sec / 3600);
 	      const mm = Math.floor((sec % 3600) / 60);
 	      const ss = sec % 60;
-	      const tsText = hh > 0 ? `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}` : `${mm}:${String(ss).padStart(2,'0')}`;
+	      const tsText = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 	      vCtx.font = `bold ${tsSize}px ${face}`;
-	      vCtx.textAlign = 'center'; vCtx.textBaseline = 'middle';
-	      let tsx = cw/2, tsy = ch - margin;
-	      if (tsPos === 'tl') { tsx = margin + 40; tsy = margin + 10; vCtx.textAlign = 'left'; }
-	      else if (tsPos === 'tr') { tsx = cw - margin - 40; tsy = margin + 10; vCtx.textAlign = 'right'; }
-	      else if (tsPos === 'br') { tsx = cw - margin - 40; tsy = ch - margin; vCtx.textAlign = 'right'; }
-	      else { tsx = margin + 40; tsy = ch - margin; vCtx.textAlign = 'left'; }
+	      let tsx, tsy;
+	      const margin = 15;
+	      if (tsPos === 'tl') { tsx = margin; tsy = margin + tsSize; vCtx.textAlign = 'left'; vCtx.textBaseline = 'top'; }
+	      else if (tsPos === 'tr') { tsx = cw - margin; tsy = margin + tsSize; vCtx.textAlign = 'right'; vCtx.textBaseline = 'top'; }
+	      else if (tsPos === 'ct') { tsx = cw * tsOffX; tsy = margin + tsSize; vCtx.textAlign = 'center'; vCtx.textBaseline = 'top'; }
+	      else if (tsPos === 'cb') { tsx = cw * tsOffX; tsy = ch - margin; vCtx.textAlign = 'center'; vCtx.textBaseline = 'bottom'; }
+	      else if (tsPos === 'bl') { tsx = margin; tsy = ch - margin; vCtx.textAlign = 'left'; vCtx.textBaseline = 'bottom'; }
+	      else { tsx = cw - margin; tsy = ch - margin; vCtx.textAlign = 'right'; vCtx.textBaseline = 'bottom'; } // br
+	      // untuk posisi CB/CT, override dengan slider
+	      if (tsPos === 'cb' || tsPos === 'ct') { tsx = cw * tsOffX; }
 	      vCtx.fillStyle = 'rgba(0,0,0,0.5)';
 	      vCtx.fillText(tsText, tsx+1, tsy+1);
 	      vCtx.fillStyle = tsColor;
