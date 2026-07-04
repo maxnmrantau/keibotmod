@@ -822,35 +822,29 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </select>
             </div>
 
-	            <div class="fg" style="margin-bottom:0; justify-content:flex-end;">
-              <label style="display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);padding:10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-beat-pulse" style="width:16px;height:16px;accent-color:var(--accent);">
-                <span style="font-size:11px;font-weight:700;">💫 Beat Pulse</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="g2" style="margin-bottom:16px">
-            <div class="fg" style="margin-bottom:0">
-              <label class="fl">Mode Visualizer</label>
-              <select id="bc-vis-mode" onchange="onVisModeChange()">
-                <option value="manual">Manual (Terapkan setting ini ke semua video)</option>
-                <option value="random">🎲 Random Acak dari Preset Tersimpan</option>
-                <option value="smart">🎯 Smart Random (Sistem pilihkan)</option>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+              <label style="font-size:10px;font-weight:700;color:var(--text);white-space:nowrap;">Mode:</label>
+              <select id="bc-vis-mode" onchange="onVisModeChange()" style="flex:1;min-width:160px;font-size:10px;padding:3px 4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
+                <option value="manual">Manual</option>
+                <option value="random">🎲 Random Acak</option>
+                <option value="smart">🎯 Smart Random</option>
               </select>
-            </div>
             
-            <div class="fg" style="margin-bottom:0; display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
-              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-floating-card" checked style="width:14px;height:14px;accent-color:var(--accent);">
-                <span style="font-size:10px;font-weight:700;">🏷️ Floating Card</span>
+            <div class="fg" style="margin-bottom:0; display:flex; gap:4px; justify-content:flex-end; flex-wrap:wrap; align-items:center;">
+              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-beat-pulse" style="width:13px;height:13px;accent-color:var(--accent);">
+                <span style="font-size:10px;font-weight:700;">💫 Pulse</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-tracklist" style="width:14px;height:14px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
-                <span style="font-size:10px;font-weight:700;">📋 Track List</span>
+              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-floating-card" checked style="width:13px;height:13px;accent-color:var(--accent);">
+                <span style="font-size:10px;font-weight:700;">🏷️ Card</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);">
-                <input type="checkbox" id="bc-use-watermark" style="width:14px;height:14px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'block':'none'">
+              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-tracklist" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-tracklist-wrap').style.display=this.checked?'block':'none'">
+                <span style="font-size:10px;font-weight:700;">📋 Playlist</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);padding:5px 8px;border-radius:6px;cursor:pointer;color:var(--text);">
+                <input type="checkbox" id="bc-use-watermark" style="width:13px;height:13px;accent-color:var(--accent);" onchange="document.getElementById('vis-watermark-wrap').style.display=this.checked?'flex':'none'">
                 <span style="font-size:10px;font-weight:700;">💧 Watermark</span>
               </label>
             </div>
@@ -957,28 +951,20 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </div>
             </div>
 
-            <!-- ⚙️ TOGGLE ADVANCED SETTINGS -->
-            <div style="text-align:center;margin-bottom:8px;">
-              <span id="adv-toggle-btn" onclick="toggleAdvanced()" style="cursor:pointer;font-size:10px;font-weight:700;color:var(--accent);background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 16px;user-select:none;">
-                ⚙️ Advanced Settings ▼
-              </span>
+            <div class="g3" style="margin-bottom:8px">
+              <div class="sg"><div class="sg-lbl">Base Color</div><input type="color" id="bc-col-bot" value="#10b981" style="width:28px;height:28px;padding:1px"></div>
+              <div class="sg"><div class="sg-lbl">Peak Color</div><input type="color" id="bc-col-top" value="#00e5ff" style="width:28px;height:28px;padding:1px"></div>
+              <div class="sg"><div class="sg-lbl">Particle Color</div><input type="color" id="bc-col-part" value="#ffffff" style="width:28px;height:28px;padding:1px"></div>
             </div>
-            <div id="adv-settings-wrap" style="display:none;">
-
-            <div class="g3" style="margin-bottom:12px">
-              <div class="sg"><div class="sg-lbl">Base Color</div><input type="color" id="bc-col-bot" value="#10b981"></div>
-              <div class="sg"><div class="sg-lbl">Peak Color</div><input type="color" id="bc-col-top" value="#00e5ff"></div>
-              <div class="sg"><div class="sg-lbl">Particle Color</div><input type="color" id="bc-col-part" value="#ffffff"></div>
-            </div>
-            <div class="g3">
+            <div class="g3" style="margin-bottom:4px">
               <div class="sg"><div class="sg-lbl">X Pos <span class="vb" id="vv-px">50%</span></div><input type="range" id="bc-pos-x" name="pos_x" min="0" max="100" value="50" oninput="uv('vv-px',this.value,'%')"></div>
               <div class="sg"><div class="sg-lbl">Y Pos <span class="vb" id="vv-py">85%</span></div><input type="range" id="bc-pos-y" name="pos_y" min="0" max="100" value="85" oninput="uv('vv-py',this.value,'%')"></div>
               <div class="sg"><div class="sg-lbl">Width <span class="vb" id="vv-wp">60%</span></div><input type="range" id="bc-width" name="width_pct" min="10" max="100" value="60" oninput="uv('vv-wp',this.value,'%')"></div>
               <div class="sg"><div class="sg-lbl">Max Height <span class="vb" id="vv-mh">40%</span></div><input type="range" id="bc-maxh" name="max_height" min="10" max="100" value="40" oninput="uv('vv-mh',this.value,'%')"></div>
               <div class="sg"><div class="sg-lbl">Idle Height <span class="vb" id="vv-ih">5px</span></div><input type="range" id="bc-idle" name="idle_height" min="0" max="50" value="5" oninput="uv('vv-ih',this.value,'px')"></div>
-              <div class="sg" style="display:flex; flex-direction:column; gap:8px;">
+              <div class="sg" style="display:flex; flex-direction:column; gap:4px;">
                   <div class="sg-lbl">Bar Style</div>
-                  <select id="bc-bar-style" style="width:100%;font-size:11px;padding:4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
+                  <select id="bc-bar-style" style="width:100%;font-size:10px;padding:3px 4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);">
                       <option value="bottom">Naik ke Atas</option>
                       <option value="center">Atas Bawah (Center)</option>
                   </select>
@@ -986,81 +972,55 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               <div class="sg"><div class="sg-lbl">Bar Count <span class="vb" id="vv-bc">64</span></div><input type="range" id="bc-bars" name="bar_count" min="10" max="200" value="64" oninput="uv('vv-bc',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Reactivity <span class="vb" id="vv-r">0.66x</span></div><input type="range" id="bc-react" name="reactivity" min="0.1" max="4.0" step="0.01" value="0.66" oninput="uv('vv-r',this.value,'x')"></div>
               <div class="sg"><div class="sg-lbl">Bar Gap <span class="vb" id="vv-sp">3px</span></div><input type="range" id="bc-gap" name="spacing" min="0" max="20" value="3" oninput="uv('vv-sp',this.value,'px')"></div>
-              <div class="sg" style="display:flex; flex-direction:column; gap:8px;">
+              <div class="sg" style="display:flex; flex-direction:column; gap:4px;">
                   <div class="sg-lbl">✨ Particle Style</div>
-                  <select id="bc-particle-type" style="width:100%;font-size:11px;padding:4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);" onchange="prev_particles=[]">
-                      <option value="sparkle">✦ Sparkle (default)</option>
-                      <option value="fireworks">🎆 Fireworks Explosion</option>
-                      <option value="trail">☄ Trail Particles</option>
-                      <option value="petals">❅ Falling Petals/Stars</option>
-                      <option value="smoke">🌫️ Smoke / Asap</option>
-                      <option value="snow">❄️ Snow / Salju</option>
-                      <option value="rain">🌧️ Light Rain / Hujan</option>
-                      <option value="bubbles">🫧 Floating Bubbles</option>
+                  <select id="bc-particle-type" style="width:100%;font-size:10px;padding:3px 4px;border-radius:4px;background:var(--surface);color:var(--text);border:1px solid var(--border);" onchange="prev_particles=[]">
+                      <option value="sparkle">✦ Sparkle</option>
+                      <option value="fireworks">🎆 Fireworks</option>
+                      <option value="trail">☄ Trail</option>
+                      <option value="petals">❅ Petals</option>
+                      <option value="smoke">🌫️ Smoke</option>
+                      <option value="snow">❄️ Snow</option>
+                      <option value="rain">🌧️ Rain</option>
+                      <option value="bubbles">🫧 Bubbles</option>
                   </select>
               </div>
               <div class="sg"><div class="sg-lbl">Particles <span class="vb" id="vv-pa">3</span></div><input type="range" id="bc-parts" name="part_amount" min="0" max="300" value="3" oninput="uv('vv-pa',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Part Speed <span class="vb" id="vv-ps">1.0x</span></div><input type="range" id="bc-pspd" name="part_speed" min="0.1" max="5.0" step="0.1" value="1.0" oninput="uv('vv-ps',this.value,'x')"></div>
             </div>
 
-            <!-- ════════ PARTICLE ADVANCED ════════ -->
-            <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
-              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Ukuran</span>
-                  <select id="bc-part-size" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                    <option value="small">Kecil</option>
-                    <option value="medium" selected>Sedang</option>
-                    <option value="large">Besar</option>
-                  </select>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Umur</span>
-                  <select id="bc-part-life" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                    <option value="short">Pendek</option>
-                    <option value="medium" selected>Sedang</option>
-                    <option value="long">Panjang</option>
-                  </select>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Opacity</span>
-                  <select id="bc-part-opacity" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                    <option value="0.3">30%</option>
-                    <option value="0.5">50%</option>
-                    <option value="0.7">70%</option>
-                    <option value="1.0" selected>100%</option>
-                  </select>
-                </div>
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Kepadatan</span>
-                  <select id="bc-part-density" style="padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-                    <option value="low">Rendah</option>
-                    <option value="medium" selected>Sedang</option>
-                    <option value="high">Tinggi</option>
-                  </select>
-                </div>
+            <!-- ════════ PARTICLE ADVANCED + TRANSISI ════════ -->
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; max-width:800px; margin-left:auto; margin-right:auto;">
+              <div style="display:flex; align-items:center; gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 8px;">
+                <span style="font-size:9px;color:var(--muted);font-weight:600;">Ukuran</span>
+                <select id="bc-part-size" style="padding:2px 4px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="small">Kcl</option><option value="medium" selected>Sdg</option><option value="large">Bsr</option>
+                </select>
+                <span style="font-size:9px;color:var(--muted);font-weight:600;margin-left:4px;">Umur</span>
+                <select id="bc-part-life" style="padding:2px 4px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="short">Pdk</option><option value="medium" selected>Sdg</option><option value="long">Pjg</option>
+                </select>
+                <span style="font-size:9px;color:var(--muted);font-weight:600;margin-left:4px;">Opacity</span>
+                <select id="bc-part-opacity" style="padding:2px 4px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="0.3">30%</option><option value="0.5">50%</option><option value="0.7">70%</option><option value="1.0" selected>100%</option>
+                </select>
+                <span style="font-size:9px;color:var(--muted);font-weight:600;margin-left:4px;">Kepadatan</span>
+                <select id="bc-part-density" style="padding:2px 4px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                  <option value="low">Rdh</option><option value="medium" selected>Sdg</option><option value="high">Tggi</option>
+                </select>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 8px;flex:1;min-width:200px;">
+                <span style="font-size:9px;color:var(--muted);font-weight:600;white-space:nowrap;">Fade</span>
+                <input type="range" id="bc-fade" name="fade_duration" min="0" max="5" step="0.5" value="0" style="flex:1;height:4px;" oninput="uv('vv-fade',this.value,'s'); document.getElementById('bc-fade-val').textContent = this.value > 0 ? this.value+'s' : 'Mati'">
+                <span id="bc-fade-val" style="font-size:10px;font-weight:700;color:var(--accent);min-width:30px;text-align:center;">Mati</span>
               </div>
             </div>
 
-            <!-- ════════ TRANSISI VIDEO ════════ -->
-            <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                <span style="font-size:11px;font-weight:700;color:var(--text);letter-spacing:.05em;">🎬 Transisi Video</span>
-                <span id="bc-fade-val" style="font-size:10px;font-weight:700;color:var(--accent);">Mati</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Fade to Black</span>
-                <input type="range" id="bc-fade" name="fade_duration" min="0" max="5" step="0.5" value="0" style="flex:1;" oninput="uv('vv-fade',this.value,'s'); document.getElementById('bc-fade-val').textContent = this.value > 0 ? this.value+'s' : 'Mati'">
-                <span style="font-size:10px;color:var(--muted);font-weight:600;min-width:50px;text-align:right;"><span id="vv-fade">0</span>s</span>
-              </div>
+            <div style="display:flex;gap:6px;margin-top:6px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn btn-g btn-sm" style="font-size:10px;padding:4px 10px;" onclick="saveVisPreset()">💾 Simpan Preset</button>
+              <select id="vis-preset-load" style="width:140px;font-size:10px;padding:3px 4px;" onchange="loadVisPreset(this.value)"><option value="">-- Load Preset --</option></select>
+              <button type="button" class="btn btn-danger btn-sm" style="font-size:10px;padding:4px 10px;" onclick="deleteVisPreset()">🗑 Hapus Preset</button>
             </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px; align-items:center;">
-              <button type="button" class="btn btn-g btn-sm" onclick="saveVisPreset()">💾 Simpan Preset</button>
-              <select id="vis-preset-load" style="width:180px" onchange="loadVisPreset(this.value)"><option value="">-- Load Preset --</option></select>
-              <button type="button" class="btn btn-danger btn-sm" onclick="deleteVisPreset()">🗑 Hapus Preset</button>
-            </div>
-            </div><!-- /adv-settings-wrap -->
           </div>
 
           <div id="vis-random-wrap" style="display:none">
@@ -2205,18 +2165,6 @@ function onVisModeChange() {
   document.getElementById('vis-random-wrap').style.display = mode === 'random' ? 'block' : 'none';
 }
 
-function toggleAdvanced() {
-  const w = document.getElementById('adv-settings-wrap');
-  const btn = document.getElementById('adv-toggle-btn');
-  if (w.style.display === 'none') {
-    w.style.display = 'block';
-    btn.textContent = '⚙️ Advanced Settings ▲';
-  } else {
-    w.style.display = 'none';
-    btn.textContent = '⚙️ Advanced Settings ▼';
-  }
-}
-
 function onEffectTypeChange() {
   const fx = document.getElementById('bc-effect-type').value;
   const barStyleSel = document.getElementById('bc-bar-style');
@@ -2513,7 +2461,7 @@ function drawLivePreview() {
 
       vCtx.font = 'bold 11px ' + face;
       vCtx.fillStyle = '#ccc';
-      vCtx.fillText('TRACK LIST', lx + pad, ly + pad + 4);
+      vCtx.fillText('Playlist', lx + pad, ly + pad + 4);
 
       // cari lagu aktif
       const elapsed = ((performance.now() - playlistSimStart) / 1000) * 10;
@@ -2998,18 +2946,23 @@ function drawPreviewParticles(cw, ch, cfg) {
         vCtx.fillStyle = cfg.color_part; vCtx.fill();
         alive.push(p);
       }
-    } else if (p.type === 'sm') {
-      // asap: membesar & memudar
-      p.r += (p.grow || 0.04) * spd;
-      p.life--;
-      if (p.r < cw * 0.15 && p.life > 0 && p.y > -20) {
-        const fade = Math.max(0.1, p.life / 50);
-        vCtx.globalAlpha = fade * 0.35;
-        vCtx.fillStyle = cfg.color_part;
-        vCtx.beginPath(); vCtx.arc(p.x, p.y, Math.max(1, p.r), 0, Math.PI * 2); vCtx.fill();
-        vCtx.globalAlpha = 1;
-        alive.push(p);
-      }
+	    } else if (p.type === 'sm') {
+	      // asap: membesar & memudar — soft cloud look
+	      p.r += (p.grow || 0.04) * spd;
+	      p.life--;
+	      if (p.r < cw * 0.15 && p.life > 0 && p.y > -20) {
+	        const fade = Math.max(0.1, p.life / 50);
+	        vCtx.save();
+	        vCtx.globalAlpha = fade * 0.4;
+	        const grad = vCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(1, p.r));
+	        grad.addColorStop(0, cfg.color_part);
+	        grad.addColorStop(0.4, cfg.color_part);
+	        grad.addColorStop(1, 'rgba(128,128,128,0)');
+	        vCtx.fillStyle = grad;
+	        vCtx.beginPath(); vCtx.arc(p.x, p.y, Math.max(1, p.r), 0, Math.PI * 2); vCtx.fill();
+	        vCtx.restore();
+	        alive.push(p);
+	      }
     } else if (p.type === 'sn') {
       // salju: goyang ringan
       p.x += Math.sin(p.y * 0.08) * 0.5;

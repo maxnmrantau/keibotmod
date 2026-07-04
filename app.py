@@ -1027,15 +1027,25 @@ class VisualEngine:
                     self._draw_star(frame, int(x), int(y), max(1, int(radius)), extra, self.col_part)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'sm':
-                # smoke: membesar & memudar
+                # smoke: membesar & memudar — tampilan asap lembut
                 radius += extra * spd
                 life -= 1
-                if radius < 80 and life > 0 and y > -20:
-                    # semakin besar semakin transparan — simulasi alpha dengan warna lebih gelap
+                if radius < 100 and life > 0 and y > -20:
                     fade = max(0.1, life / 60)
-                    intensity = int(255 * fade * 0.4)
-                    col = (intensity, intensity, intensity)
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), col, -1)
+                    # buat overlay kecil untuk smoke (agar bisa di-blur)
+                    r_int = max(2, int(radius))
+                    d = r_int * 2 + 6
+                    x1 = max(0, min(w - d, int(x) - r_int - 3))
+                    y1 = max(0, min(h - d, int(y) - r_int - 3))
+                    smoke_patch = np.zeros((d, d, 3), dtype=np.uint8)
+                    cx_sm, cy_sm = r_int + 3, r_int + 3
+                    intensity = int(180 * fade)
+                    cv2.circle(smoke_patch, (cx_sm, cy_sm), r_int, (intensity, intensity, intensity), -1)
+                    # blur untuk efek soft
+                    smoke_patch = cv2.GaussianBlur(smoke_patch, (0, 0), max(2, r_int // 3))
+                    # blend ke frame
+                    roi_sm = frame[y1:y1+d, x1:x1+d]
+                    cv2.addWeighted(smoke_patch, 0.5 * fade, roi_sm, 1.0 - 0.5 * fade, 0, roi_sm)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'sn':
                 # snow: goyang ringan
@@ -1222,7 +1232,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.82
 
                 # header
-                cv2.putText(overlay_list, "TRACK LIST", (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
+                cv2.putText(overlay_list, "Playlist", (pad, pad + 12), tfont, header_s, (200, 200, 200), 1, cv2.LINE_AA)
 
                 start_idx = max(0, cur_idx - 4)
                 shown = 0
