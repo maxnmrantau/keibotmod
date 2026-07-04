@@ -805,7 +805,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
           <div class="g2" style="margin-bottom:16px">
             <div class="fg" style="margin-bottom:0">
               <label class="fl">🎨 Efek Visualizer</label>
-              <select id="bc-effect-type">
+              <select id="bc-effect-type" onchange="onEffectTypeChange()">
                 <option value="spectrum">◉ Spectrum Bars</option>
                 <option value="circular">◎ Circular Spectrum</option>
                 <option value="waveform">∿ Waveform</option>
@@ -957,6 +957,14 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </div>
             </div>
 
+            <!-- ⚙️ TOGGLE ADVANCED SETTINGS -->
+            <div style="text-align:center;margin-bottom:8px;">
+              <span id="adv-toggle-btn" onclick="toggleAdvanced()" style="cursor:pointer;font-size:10px;font-weight:700;color:var(--accent);background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 16px;user-select:none;">
+                ⚙️ Advanced Settings ▼
+              </span>
+            </div>
+            <div id="adv-settings-wrap" style="display:none;">
+
             <div class="g3" style="margin-bottom:12px">
               <div class="sg"><div class="sg-lbl">Base Color</div><input type="color" id="bc-col-bot" value="#10b981"></div>
               <div class="sg"><div class="sg-lbl">Peak Color</div><input type="color" id="bc-col-top" value="#00e5ff"></div>
@@ -977,7 +985,6 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               </div>
               <div class="sg"><div class="sg-lbl">Bar Count <span class="vb" id="vv-bc">64</span></div><input type="range" id="bc-bars" name="bar_count" min="10" max="200" value="64" oninput="uv('vv-bc',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Reactivity <span class="vb" id="vv-r">0.66x</span></div><input type="range" id="bc-react" name="reactivity" min="0.1" max="4.0" step="0.01" value="0.66" oninput="uv('vv-r',this.value,'x')"></div>
-              <div class="sg"><div class="sg-lbl">Gravity <span class="vb" id="vv-g">0.08</span></div><input type="range" id="bc-grav" name="gravity" min="0.01" max="0.50" step="0.01" value="0.08" oninput="uv('vv-g',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Bar Gap <span class="vb" id="vv-sp">3px</span></div><input type="range" id="bc-gap" name="spacing" min="0" max="20" value="3" oninput="uv('vv-sp',this.value,'px')"></div>
               <div class="sg" style="display:flex; flex-direction:column; gap:8px;">
                   <div class="sg-lbl">✨ Particle Style</div>
@@ -995,7 +1002,8 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
               <div class="sg"><div class="sg-lbl">Particles <span class="vb" id="vv-pa">3</span></div><input type="range" id="bc-parts" name="part_amount" min="0" max="300" value="3" oninput="uv('vv-pa',this.value,'')"></div>
               <div class="sg"><div class="sg-lbl">Part Speed <span class="vb" id="vv-ps">1.0x</span></div><input type="range" id="bc-pspd" name="part_speed" min="0.1" max="5.0" step="0.1" value="1.0" oninput="uv('vv-ps',this.value,'x')"></div>
             </div>
-            <!-- ════════ PARTICLE SETTINGS ════════ -->
+
+            <!-- ════════ PARTICLE ADVANCED ════════ -->
             <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
               <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:4px;">
@@ -1033,6 +1041,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 </div>
               </div>
             </div>
+
             <!-- ════════ TRANSISI VIDEO ════════ -->
             <div style="margin-top:12px; border:1px solid var(--border); border-radius:8px; padding:10px; max-width:800px; margin-left:auto; margin-right:auto; background:var(--card);">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
@@ -1045,11 +1054,13 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 <span style="font-size:10px;color:var(--muted);font-weight:600;min-width:50px;text-align:right;"><span id="vv-fade">0</span>s</span>
               </div>
             </div>
+
             <div style="display:flex;gap:8px;margin-top:12px; align-items:center;">
               <button type="button" class="btn btn-g btn-sm" onclick="saveVisPreset()">💾 Simpan Preset</button>
               <select id="vis-preset-load" style="width:180px" onchange="loadVisPreset(this.value)"><option value="">-- Load Preset --</option></select>
               <button type="button" class="btn btn-danger btn-sm" onclick="deleteVisPreset()">🗑 Hapus Preset</button>
             </div>
+            </div><!-- /adv-settings-wrap -->
           </div>
 
           <div id="vis-random-wrap" style="display:none">
@@ -2019,7 +2030,6 @@ function getVisConfig() {
     smoothing: 0.90,
     bar_count: document.getElementById('bc-bars') ? parseInt(document.getElementById('bc-bars').value) : 64,
     reactivity: document.getElementById('bc-react') ? parseFloat(document.getElementById('bc-react').value) : 0.66,
-    gravity: document.getElementById('bc-grav') ? parseFloat(document.getElementById('bc-grav').value) : 0.08,
     spacing: document.getElementById('bc-gap') ? parseInt(document.getElementById('bc-gap').value) : 3,
     part_amount: document.getElementById('bc-parts') ? parseInt(document.getElementById('bc-parts').value) : 3,
     part_speed: document.getElementById('bc-pspd') ? parseFloat(document.getElementById('bc-pspd').value) : 1.0,
@@ -2084,10 +2094,10 @@ function loadVisPreset(name) {
 
   const map = [
     ['bc-pos-x',  'vv-px', '%'], ['bc-pos-y',  'vv-py', '%'], ['bc-width',  'vv-wp', '%'], ['bc-maxh',   'vv-mh', '%'],
-    ['bc-idle',   'vv-ih', 'px'], ['bc-bars',   'vv-bc', ''], ['bc-react',  'vv-r',  'x'], ['bc-grav',   'vv-g',  ''],
+    ['bc-idle',   'vv-ih', 'px'], ['bc-bars',   'vv-bc', ''], ['bc-react',  'vv-r',  'x'],
     ['bc-gap',    'vv-sp', 'px'], ['bc-parts',  'vv-pa', ''], ['bc-pspd',   'vv-ps', 'x'], ['bc-fade',   'vv-fade', 's']
   ];
-  const keys = ['pos_x','pos_y','width_pct','max_height','idle_height','bar_count','reactivity','gravity','spacing','part_amount','part_speed','fade_duration'];
+  const keys = ['pos_x','pos_y','width_pct','max_height','idle_height','bar_count','reactivity','spacing','part_amount','part_speed','fade_duration'];
 
   // fade duration: update juga text status
   const fadeEl = document.getElementById('bc-fade');
@@ -2193,6 +2203,27 @@ function onVisModeChange() {
   const mode = document.getElementById('bc-vis-mode').value;
   document.getElementById('vis-manual-wrap').style.display = mode === 'manual' ? 'block' : 'none';
   document.getElementById('vis-random-wrap').style.display = mode === 'random' ? 'block' : 'none';
+}
+
+function toggleAdvanced() {
+  const w = document.getElementById('adv-settings-wrap');
+  const btn = document.getElementById('adv-toggle-btn');
+  if (w.style.display === 'none') {
+    w.style.display = 'block';
+    btn.textContent = '⚙️ Advanced Settings ▲';
+  } else {
+    w.style.display = 'none';
+    btn.textContent = '⚙️ Advanced Settings ▼';
+  }
+}
+
+function onEffectTypeChange() {
+  const fx = document.getElementById('bc-effect-type').value;
+  const barStyleSel = document.getElementById('bc-bar-style');
+  if (barStyleSel) {
+    barStyleSel.disabled = (fx !== 'spectrum');
+    barStyleSel.style.opacity = (fx === 'spectrum') ? '1' : '0.4';
+  }
 }
 
 function updatePreviewBackground(yt_id) {
