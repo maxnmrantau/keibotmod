@@ -2549,7 +2549,11 @@ function drawLivePreview() {
       else if (tlPos === 'br') { lx = cw - listW - margin; ly = ch - listH - margin; }
       else if (tlPos === 'cl') { lx = margin; ly = (ch - listH) / 2; }
       else if (tlPos === 'cr') { lx = cw - listW - margin; ly = (ch - listH) / 2; }
-      else { lx = cw - listW - margin; ly = margin; } // tr default
+	      else { lx = cw - listW - margin; ly = margin; } // tr default
+
+	      // reset canvas state (karena timestamp/watermark bisa ubah textAlign)
+	      vCtx.textAlign = 'left';
+	      vCtx.textBaseline = 'top';
 
 	      // bg style
 	      if (tlBg === 'glass') {
