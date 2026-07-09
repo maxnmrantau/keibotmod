@@ -1175,6 +1175,8 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
             use_tl = cfg.get('use_tracklist', False)
             has_ts = 'track_schedule' in cfg
             if use_tl and has_ts:
+                if f == 0:
+                    print(f"[TRACKLIST] Aktif, {len(cfg['track_schedule'])} track, pos={cfg.get('tl_position','tr')}")
                 sec = f / fps
                 cur_idx = -1
                 for idx, track in enumerate(cfg['track_schedule']):
