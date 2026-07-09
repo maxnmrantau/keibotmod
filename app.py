@@ -1172,7 +1172,9 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             cv2.addWeighted(overlay, alpha, roi, 1 - alpha, 0, roi)
 
             # ── TRACK LIST (daftar lagu di dalam video) ──
-            if cfg.get('use_tracklist', False) and 'track_schedule' in cfg:
+            use_tl = cfg.get('use_tracklist', False)
+            has_ts = 'track_schedule' in cfg
+            if use_tl and has_ts:
                 sec = f / fps
                 cur_idx = -1
                 for idx, track in enumerate(cfg['track_schedule']):
