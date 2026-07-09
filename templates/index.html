@@ -2380,6 +2380,11 @@ let prev_bars = null;
 function drawLivePreview() {
   if (vCtx && visCanvas && document.getElementById('panel-batch').classList.contains('active') && document.getElementById('bs-3').style.display !== 'none') {
     const cw = visCanvas.width; const ch = visCanvas.height; vCtx.clearRect(0, 0, cw, ch); const cfg = getVisConfig();
+    // reset canvas state (mencegah bocoran dari efek lain)
+    vCtx.textAlign = 'start'; vCtx.textBaseline = 'alphabetic';
+    vCtx.globalAlpha = 1; vCtx.globalCompositeOperation = 'source-over';
+    vCtx.shadowBlur = 0; vCtx.shadowColor = 'transparent';
+    vCtx.lineWidth = 1; vCtx.lineCap = 'butt'; vCtx.strokeStyle = '#000'; vCtx.fillStyle = '#000';
     if (!prev_bars || prev_bars.length !== cfg.bar_count) prev_bars = new Array(cfg.bar_count).fill(0);
     const totW = cw * (cfg.width_pct/100); const barW = Math.max(1, (totW - cfg.spacing * (cfg.bar_count - 1)) / cfg.bar_count);
     const startX = cw * (cfg.pos_x/100) - totW / 2; const baseY = ch * (cfg.pos_y/100); const limitH = ch * (cfg.max_height/100);
