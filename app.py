@@ -2244,6 +2244,29 @@ def serve_uploads(filename):
 def serve_vps_download(filename):
     return send_from_directory('/root/keibot-output', filename)
 
+@app.route('/api/get_output_videos')
+def get_output_videos():
+    # baca folder dari file konfigurasi atau default
+    folder = '/root/keibot-output'
+    if not os.path.exists(folder): return jsonify([])
+    files = []
+    for f in sorted(os.listdir(folder), reverse=True):
+        if f.lower().endswith('.mp4'):
+            fp = os.path.join(folder, f)
+            size_mb = round(os.path.getsize(fp) / (1024*1024), 2)
+            files.append({"name": f, "size": f"{size_mb} MB"})
+    return jsonify(files)
+
+@app.route('/api/delete_output_video', methods=['POST'])
+def delete_output_video():
+    name = request.json.get('name')
+    if not name: return jsonify({"status": "error", "error": "Nama file diperlukan"})
+    fp = os.path.join('/root/keibot-output', name)
+    if os.path.exists(fp):
+        os.remove(fp)
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "error": "File tidak ditemukan"})
+
 if __name__ == '__main__':
     for t in active_tasks:
         if t['status'] == "In Factory Queue ⚙️" or "Rendering" in t['status']:

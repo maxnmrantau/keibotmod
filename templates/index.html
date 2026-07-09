@@ -472,6 +472,7 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
     <div class="nav-section">STUDIO</div>
     <button class="nav-item" onclick="go('gallery',this)" id="nb-gallery"><span class="nav-icon">▦</span> Asset Gallery</button>
     <button class="nav-item" onclick="go('titles',this)" id="nb-titles"><span class="nav-icon">✦</span> Title Generator</button>
+    <button class="nav-item" onclick="go('output',this)" id="nb-output"><span class="nav-icon">📁</span> Output Videos</button>
     <button class="nav-item" onclick="go('batch',this)" id="nb-batch"><span class="nav-icon">◉</span> Batch Creator</button>
     <div class="nav-section">SYSTEM</div>
     <button class="nav-item" onclick="go('settings',this)" id="nb-settings"><span class="nav-icon">◎</span> Settings</button>
@@ -655,9 +656,22 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
           </div>
         </div>
       </div>
-    </div>
+	    </div>
 
-    <div id="panel-batch" class="panel">
+	    <div id="panel-output" class="panel">
+	      <div class="sh" style="margin-bottom:18px">
+	        <div><div class="sh-title">📁 Output Videos</div><div class="sh-sub">Video hasil render yang disimpan di VPS</div></div>
+	        <div style="display:flex;gap:8px;align-items:center;">
+	          <span id="out-folder-label" style="font-size:10px;color:var(--muted);font-weight:600;"></span>
+	          <button class="btn btn-g btn-sm" onclick="loadOutputVideos()">🔄 Refresh</button>
+	        </div>
+	      </div>
+	      <div id="out-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+	        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:12px;">Klik Refresh untuk memuat daftar video</div>
+	      </div>
+	    </div>
+
+	    <div id="panel-batch" class="panel">
       <div class="sh" style="margin-bottom:20px">
         <div><div class="sh-title">Batch Creator</div><div class="sh-sub">Buat banyak video sekaligus dengan satu kali setting</div></div>
       </div>
@@ -1264,6 +1278,7 @@ const PAGE_META = {
   gallery:   { t: 'Gallery',         s: 'Kelola audio, background & thumbnail' },
   titles:    { t: 'Title Generator', s: 'Upload bank & generate judul baru' },
   batch:     { t: 'Batch Creator',   s: 'Buat banyak video sekaligus' },
+  output:    { t: 'Output Videos',   s: 'Lihat & download video hasil render' },
   settings:  { t: 'Settings',        s: 'API Google, channel & konfigurasi' }
 };
 
@@ -3329,6 +3344,42 @@ function saveVpsFolder() {
   localStorage.setItem('vps_folder', input.value);
   document.getElementById('vps-folder-status').textContent = '✅ Folder tersimpan: ' + input.value;
   setTimeout(() => document.getElementById('vps-folder-status').textContent = '', 3000);
+}
+
+function loadOutputVideos() {
+  const list = document.getElementById('out-list');
+  const label = document.getElementById('out-folder-label');
+  const folder = localStorage.getItem('vps_folder') || '/root/keibot-output';
+  label.textContent = '📂 ' + folder;
+  list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted);font-size:11px;">⏳ Memuat...</div>';
+  fetch('/api/get_output_videos')
+    .then(r => r.json())
+    .then(data => {
+      if (!Array.isArray(data) || !data.length) {
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:12px;">📂 Belum ada video output</div>';
+        return;
+      }
+      list.innerHTML = data.map(f => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="background:var(--surface);padding:20px;text-align:center;font-size:28px;">🎬</div>
+          <div style="padding:8px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
+            <div style="font-size:10px;color:var(--muted);margin:2px 0 6px;">${f.size}</div>
+            <div style="display:flex;gap:4px;">
+              <a href="/download_vps/${f.name}" class="btn btn-g btn-sm" style="flex:1;text-align:center;font-size:10px;padding:4px;">⬇ Download</a>
+              <button class="btn btn-danger btn-sm" style="font-size:10px;padding:4px;" onclick="deleteOutputVideo('${f.name}')">✕</button>
+            </div>
+          </div>
+        </div>`).join('');
+    })
+    .catch(() => { list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--accent2);font-size:12px;">❌ Gagal memuat</div>'; });
+}
+
+function deleteOutputVideo(name) {
+  if (!confirm(`Hapus "${name}"?`)) return;
+  fetch('/api/delete_output_video', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) })
+    .then(r => r.json())
+    .then(d => { if (d.status === 'success') loadOutputVideos(); else alert(d.error); });
 }
 document.addEventListener("DOMContentLoaded", init);
 </script>
