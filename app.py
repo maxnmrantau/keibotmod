@@ -1503,6 +1503,7 @@ def background_worker():
             preset['use_floating_card'] = task.get('use_floating_card', False)
             preset['use_tracklist'] = task.get('use_tracklist', preset.get('use_tracklist', False))
             preset['use_watermark'] = task.get('use_watermark', preset.get('use_watermark', False))
+            preset['use_timestamp'] = task.get('use_timestamp', preset.get('use_timestamp', False))
             preset['track_schedule'] = track_schedule
             preset['channel_name'] = ch_name
 
@@ -2221,6 +2222,7 @@ def batch_create():
             "use_floating_card": data.get('use_floating_card', False),
             "use_tracklist": data.get('use_tracklist', False),
             "use_watermark": data.get('use_watermark', False),
+            "use_timestamp": data.get('use_timestamp', False),
             "smart_cut": data.get('smart_cut', False),
             "cut_duration": data.get('cut_duration', 5),
             "cut_remainder": data.get('cut_remainder', 'end'),
