@@ -119,7 +119,7 @@ DB_FILE = os.path.join(BASE_DIR, 'channels_db.json')
 TASKS_FILE = os.path.join(BASE_DIR, 'tasks_db.json')
 PRESETS_FILE = os.path.join(BASE_DIR, 'presets.json')
 CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, 'client_secret.json')
-SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload']
+SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/drive.file']
 
 os.makedirs(BASE_UPLOAD, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
@@ -1627,7 +1627,42 @@ def background_worker():
                     get_ffmpeg_path(), '-y', '-i', base_video, '-c', 'copy', '-t', str(target_sec), final_video
                 ], check=True)
 
-            if channel_data:
+            dest = task.get('output_dest', 'youtube')
+
+            if dest == 'vps':
+                # Simpan di VPS — langsung selesai
+                with db_lock:
+                    for d in active_tasks:
+                        if d['id'] == task_id: d['status'] = "Render Selesai ✅"
+                save_tasks_db()
+                move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download Video]</a>")
+                return  # stop di sini, jangan lanjut upload YouTube
+            elif dest == 'drive':
+                # Google Drive upload
+                if channel_data:
+                    try:
+                        with db_lock:
+                            for d in active_tasks:
+                                if d['id'] == task_id: d['status'] = "Upload ke Google Drive... ☁️"
+                        save_tasks_db()
+                        from googleapiclient.discovery import build
+                        from googleapiclient.http import MediaFileUpload
+                        creds_list = channel_data.get('creds_list', [channel_data.get('creds_json')])
+                        for cred_str in creds_list:
+                            if not cred_str: continue
+                            creds = Credentials.from_authorized_user_info(json.loads(cred_str))
+                            drive = build('drive', 'v3', credentials=creds)
+                            media = MediaFileUpload(final_video, resumable=True)
+                            file_metadata = {'name': f"{task.get('title', 'video')}.mp4"}
+                            drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                            break
+                        move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download]</a> (Google Drive)")
+                    except Exception as e:
+                        raise Exception(f"Gagal upload Drive: {str(e)[:50]}")
+                else:
+                    move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download Video]</a>")
+            elif channel_data:
+                # YouTube upload (existing logic)
                 creds_list = channel_data.get('creds_list', [channel_data.get('creds_json')])
                 upload_berhasil = False
                 pesan_error = "Token API Tidak Ditemukan/Kosong!" 
@@ -2201,7 +2236,8 @@ def batch_create():
             "smart_cut": data.get('smart_cut', False),
             "cut_duration": data.get('cut_duration', 5),
             "cut_remainder": data.get('cut_remainder', 'end'),
-            "cut_use_remainder": data.get('cut_use_remainder', True)
+            "cut_use_remainder": data.get('cut_use_remainder', True),
+            "output_dest": data.get('output_dest', 'youtube')
         }
         with db_lock:
             active_tasks.append({"id": t_id, "title": blueprint['title'], "time": blueprint['publish_date'], "status": "In Factory Queue ⚙️", "type": "📺 VOD"})

@@ -703,13 +703,22 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                 </select>
                 <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:4px;">
                   <input type="checkbox" id="bc-cut-use-remainder" checked style="width:14px;height:14px;accent-color:var(--accent);">
-                  <span style="font-size:10px;font-weight:600;">Pakai sisa potongan</span>
-                </label>
-              </div>
-            </div>
-          </div>
+	                  <span style="font-size:10px;font-weight:600;">Pakai sisa potongan</span>
+	                </label>
+	              </div>
+	            </div>
+	          </div>
 
-          <div class="form-section">
+	          <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px;">
+	            <span style="font-size:11px;font-weight:700;color:var(--text);">📤 Output Destination</span>
+	            <select id="bc-output-dest" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	              <option value="youtube">▶ YouTube (otomatis upload)</option>
+	              <option value="vps">💾 Simpan di VPS (Download link)</option>
+	              <option value="drive">☁️ Google Drive</option>
+	            </select>
+	          </div>
+
+	          <div class="form-section">
             <div class="fs-title">🎲 Konten Sumber</div>
             <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
               <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:6px;letter-spacing:.1em">AUDIO DI GALLERY</div>
@@ -1988,6 +1997,7 @@ function processBatch() {
     vis_presets_allowed: selectedPresets,
     generated_titles: generated_titles,
     use_floating_card: is_floating,
+    output_dest: document.getElementById('bc-output-dest') ? document.getElementById('bc-output-dest').value : 'youtube',
     smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
     cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
     cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end',
