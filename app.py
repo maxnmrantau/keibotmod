@@ -2277,6 +2277,30 @@ def delete_output_video():
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "error": "File tidak ditemukan"})
 
+@app.route('/api/get_logs')
+def get_logs():
+    try:
+        lines = request.args.get('lines', '100')
+        result = subprocess.run(['journalctl', '-u', 'keibot', '-n', str(lines), '--no-pager', '-q'], 
+                               capture_output=True, text=True, timeout=10)
+        return result.stdout[-50000:] or '(kosong)'
+    except Exception as e:
+        try:
+            log_file = os.path.join(BASE_DIR, 'app.log')
+            if os.path.exists(log_file):
+                with open(log_file) as f: return f.read()[-50000:]
+        except: pass
+        return f"(Tidak bisa baca log: {str(e)[:50]})"
+
+@app.route('/api/clear_logs', methods=['POST'])
+def clear_logs():
+    try:
+        subprocess.run(['journalctl', '--rotate', '-u', 'keibot'], capture_output=True, timeout=5)
+        subprocess.run(['journalctl', '--vacuum-time=1s', '-u', 'keibot'], capture_output=True, timeout=5)
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)[:50]})
+
 if __name__ == '__main__':
     for t in active_tasks:
         if t['status'] == "In Factory Queue ⚙️" or "Rendering" in t['status']:
