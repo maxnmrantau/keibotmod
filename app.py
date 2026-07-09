@@ -1470,7 +1470,7 @@ def background_worker():
                     })
                     current_sec += dur
 
-            subprocess.run([get_ffmpeg_path(), '-y', '-threads', '2', '-f', 'concat', '-safe', '0', '-i', c_txt, '-c', 'copy', base_audio], check=True)
+            subprocess.run([get_ffmpeg_path(), '-y', '-threads', '2', '-f', 'concat', '-safe', '0', '-i', c_txt, '-c:a', 'libmp3lame', '-q:a', '2', base_audio], check=True, capture_output=True)
 
             probe = subprocess.run([
                 get_ffprobe_path(), '-v', 'error', '-show_entries', 'format=duration', 
