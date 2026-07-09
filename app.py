@@ -119,7 +119,7 @@ DB_FILE = os.path.join(BASE_DIR, 'channels_db.json')
 TASKS_FILE = os.path.join(BASE_DIR, 'tasks_db.json')
 PRESETS_FILE = os.path.join(BASE_DIR, 'presets.json')
 CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, 'client_secret.json')
-SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/drive.file']
+SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload']
 
 os.makedirs(BASE_UPLOAD, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
@@ -1631,36 +1631,20 @@ def background_worker():
 
             if dest == 'vps':
                 # Simpan di VPS — langsung selesai
+                vps_folder = str(task.get('vps_folder', '/root/keibot-output'))
+                try:
+                    os.makedirs(vps_folder, exist_ok=True)
+                    dest_path = os.path.join(vps_folder, f"{task.get('title', 'video')}_{task_id}.mp4")
+                    shutil.move(final_video, dest_path)
+                except:
+                    dest_path = final_video
                 with db_lock:
                     for d in active_tasks:
                         if d['id'] == task_id: d['status'] = "Render Selesai ✅"
                 save_tasks_db()
-                move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download Video]</a>")
+                dl_link = f"/download_vps/{os.path.basename(dest_path)}" if not dest_path.startswith("/root/") else dest_path
+                move_to_history(task_id, f"Render Selesai ✅ <a href='{dl_link}' target='_blank'>[Download Video]</a>")
                 return  # stop di sini, jangan lanjut upload YouTube
-            elif dest == 'drive':
-                # Google Drive upload
-                if channel_data:
-                    try:
-                        with db_lock:
-                            for d in active_tasks:
-                                if d['id'] == task_id: d['status'] = "Upload ke Google Drive... ☁️"
-                        save_tasks_db()
-                        from googleapiclient.discovery import build
-                        from googleapiclient.http import MediaFileUpload
-                        creds_list = channel_data.get('creds_list', [channel_data.get('creds_json')])
-                        for cred_str in creds_list:
-                            if not cred_str: continue
-                            creds = Credentials.from_authorized_user_info(json.loads(cred_str))
-                            drive = build('drive', 'v3', credentials=creds)
-                            media = MediaFileUpload(final_video, resumable=True)
-                            file_metadata = {'name': f"{task.get('title', 'video')}.mp4"}
-                            drive.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                            break
-                        move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download]</a> (Google Drive)")
-                    except Exception as e:
-                        raise Exception(f"Gagal upload Drive: {str(e)[:50]}")
-                else:
-                    move_to_history(task_id, f"Render Selesai ✅ <a href='/static/final_{task_id}.mp4' target='_blank'>[Download Video]</a>")
             elif channel_data:
                 # YouTube upload (existing logic)
                 creds_list = channel_data.get('creds_list', [channel_data.get('creds_json')])
@@ -2237,7 +2221,8 @@ def batch_create():
             "cut_duration": data.get('cut_duration', 5),
             "cut_remainder": data.get('cut_remainder', 'end'),
             "cut_use_remainder": data.get('cut_use_remainder', True),
-            "output_dest": data.get('output_dest', 'youtube')
+            "output_dest": data.get('output_dest', 'youtube'),
+            "vps_folder": data.get('vps_folder', '/root/keibot-output')
         }
         with db_lock:
             active_tasks.append({"id": t_id, "title": blueprint['title'], "time": blueprint['publish_date'], "status": "In Factory Queue ⚙️", "type": "📺 VOD"})
@@ -2254,6 +2239,10 @@ def batch_create():
 @app.route('/uploads/<path:filename>')
 def serve_uploads(filename):
     return send_from_directory(BASE_UPLOAD, filename)
+
+@app.route('/download_vps/<path:filename>')
+def serve_vps_download(filename):
+    return send_from_directory('/root/keibot-output', filename)
 
 if __name__ == '__main__':
     for t in active_tasks:

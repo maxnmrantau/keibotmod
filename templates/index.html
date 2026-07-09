@@ -710,12 +710,15 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	          </div>
 
 	          <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px;">
-	            <span style="font-size:11px;font-weight:700;color:var(--text);">📤 Output Destination</span>
-	            <select id="bc-output-dest" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	            <span style="font-size:11px;font-weight:700;color:var(--text);">📤 Output</span>
+	            <select id="bc-output-dest" onchange="document.getElementById('vps-folder-wrap').style.display=this.value==='vps'?'inline-flex':'none'" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
 	              <option value="youtube">▶ YouTube (otomatis upload)</option>
-	              <option value="vps">💾 Simpan di VPS (Download link)</option>
-	              <option value="drive">☁️ Google Drive</option>
+	              <option value="vps">💾 Simpan di VPS</option>
 	            </select>
+	            <span id="vps-folder-wrap" style="display:none;align-items:center;gap:4px;">
+	              <span style="font-size:10px;color:var(--muted);font-weight:600;">Folder:</span>
+	              <input type="text" id="bc-vps-folder" value="/root/keibot-output" placeholder="/root/keibot-output" style="width:180px;padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+	            </span>
 	          </div>
 
 	          <div class="form-section">
@@ -1998,6 +2001,7 @@ function processBatch() {
     generated_titles: generated_titles,
     use_floating_card: is_floating,
     output_dest: document.getElementById('bc-output-dest') ? document.getElementById('bc-output-dest').value : 'youtube',
+    vps_folder: document.getElementById('bc-vps-folder') ? document.getElementById('bc-vps-folder').value : '/root/keibot-output',
     smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
     cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
     cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end',
