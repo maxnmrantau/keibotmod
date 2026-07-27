@@ -21,9 +21,13 @@ def auto_setup_dependencies():
     ffmpeg_found = shutil.which("ffmpeg") or os.path.exists("/usr/bin/ffmpeg")
     if not ffmpeg_found:
         print("⚙️ KEIBOT: ffmpeg tidak ditemukan, mencoba install otomatis...")
-        ret = os.system("apt-get update -qq && apt-get install -y ffmpeg")
-        if ret == 0: print("✅ ffmpeg berhasil diinstall!")
-        else: print("❌ Gagal install ffmpeg otomatis. Jalankan manual: apt-get install -y ffmpeg")
+        try:
+            subprocess.run(["apt-get", "update", "-qq"], check=True, capture_output=True, timeout=60)
+            subprocess.run(["apt-get", "install", "-y", "ffmpeg"], check=True, capture_output=True, timeout=120)
+            print("✅ ffmpeg berhasil diinstall!")
+        except Exception as e:
+            print(f"❌ Gagal install ffmpeg otomatis: {e}")
+            print("👉 Jalankan manual: apt-get install -y ffmpeg")
     else:
         path = shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
         print(f"✅ ffmpeg ditemukan: {path}")
@@ -445,16 +449,21 @@ class BackgroundManager:
         self.bg_paths = bg_paths; self.w = w; self.h = h; self.idx = 0; self.reader = None; self.static_bg = None; self.load_current()
         
     def load_current(self):
-        if self.reader: self.reader.close()
-        path = self.bg_paths[self.idx]
-        if path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): 
-            img = cv2.imread(path)
-            if img is not None:
-                self.static_bg = cv2.resize(img, (self.w, self.h))
-            else:
-                self.static_bg = np.zeros((self.h, self.w, 3), dtype=np.uint8)
-        else: 
-            self.reader = imageio.get_reader(path, 'ffmpeg')
+        try:
+            if self.reader: self.reader.close()
+            self.reader = None
+            path = self.bg_paths[self.idx]
+            if path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): 
+                img = cv2.imread(path)
+                if img is not None:
+                    self.static_bg = cv2.resize(img, (self.w, self.h))
+                else:
+                    self.static_bg = np.zeros((self.h, self.w, 3), dtype=np.uint8)
+            else: 
+                self.reader = imageio.get_reader(path, 'ffmpeg')
+        except Exception as e:
+            print(f"[BackgroundManager] Gagal load {path}: {e}")
+            self.static_bg = np.zeros((self.h, self.w, 3), dtype=np.uint8)
             
     def get_frame(self):
         if self.static_bg is not None: return self.static_bg.copy()
@@ -462,7 +471,10 @@ class BackgroundManager:
         except: self.idx = (self.idx + 1) % len(self.bg_paths); self.load_current(); return self.get_frame()
         
     def close(self):
-        if self.reader: self.reader.close()
+        try:
+            if self.reader: self.reader.close()
+        except:
+            pass
 
 class VisualEngine:
     def __init__(self, c_bot, c_top, c_part):
@@ -1104,6 +1116,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
     vis = VisualEngine(c_bot, c_top, c_part)
     bg = BackgroundManager(bg_paths, w, h)
     audio = AudioBrain(); audio.load(audio_path)
+    _wm_state_ctx = {}
     
     with db_lock:
         for d in active_tasks:
@@ -1332,9 +1345,12 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         pulse = 0.7 + 0.3 * abs(math.sin(frame_sec * 2.5))
                     elif wm_move == 'random_walk':
                         # random walk kontinu
-                        if not hasattr(self, '_wm_state'):
-                            self._wm_state = {'x': float(bx), 'y': float(by), 'dx': 1.5, 'dy': 1.2}
-                        ws = self._wm_state
+                        if not _wm_state_ctx:
+                            _wm_state_ctx['x'] = float(bx)
+                            _wm_state_ctx['y'] = float(by)
+                            _wm_state_ctx['dx'] = 1.5
+                            _wm_state_ctx['dy'] = 1.2
+                        ws = _wm_state_ctx
                         wm_spd_mult = {'slow': 0.5, 'fast': 2.5}.get(wm_speed, 1.2)
                         # update arah gradual
                         if random.random() < 0.015:
