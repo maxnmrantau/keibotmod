@@ -12,14 +12,14 @@ sudo apt-get install -y ffmpeg python3-pip python3-venv
 cd /root
 
 # Hapus folder lama jika user melakukan install ulang
-rm -rf keibot-factory
+rm -rf keibotmod
 
 # Mengunduh file dari GitHub Kamu
 echo "📥 Mengunduh sistem dari GitHub..."
 	git clone https://github.com/maxnmrantau/keibotmod.git
 
 # Masuk ke folder hasil download
-cd keibot-factory
+cd keibotmod
 
 # Buat Virtual Environment & Install Library
 echo "📦 Menginstall Library Python..."
@@ -33,13 +33,13 @@ pip install -r requirements.txt
 echo "⚙️ Menyiapkan Mesin 24/7..."
 cat <<EOF > /etc/systemd/system/keibot.service
 [Unit]
-Description=KeiBot Factory Web Panel
+Description=KeiBot Mod Web Panel
 After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/root/keibot-factory
-ExecStart=/root/keibot-factory/venv/bin/python /root/keibot-factory/app.py
+WorkingDirectory=/root/keibotmod
+ExecStart=/root/keibotmod/venv/bin/python /root/keibotmod/app.py
 Restart=always
 
 [Install]

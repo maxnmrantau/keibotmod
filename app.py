@@ -950,7 +950,15 @@ class VisualEngine:
         sz_mult = {'small': 0.6, 'large': 1.5}.get(cfg.get('part_size', 'medium') if cfg else 'medium', 1.0)
         life_mult = {'short': 0.5, 'long': 1.8}.get(cfg.get('part_life', 'medium') if cfg else 'medium', 1.0)
         dens_mult = {'low': 0.5, 'high': 1.8}.get(cfg.get('part_density', 'medium') if cfg else 'medium', 1.0)
-        part_alpha = float(cfg.get('part_opacity', 1.0)) if cfg else 1.0
+        part_alpha = max(0.0, min(1.0, float(cfg.get('part_opacity', 1.0)) if cfg else 1.0))
+
+        # 🐛 FIX: part_alpha sebelumnya dihitung tapi tidak pernah dipakai, sehingga
+        # pengaturan "Opacity Partikel" diabaikan saat render (preview & render beda).
+        # Kita modulasi warna partikel dengan part_alpha sebagai aproximasi globalAlpha.
+        def pcol(base):
+            if part_alpha >= 0.999:
+                return base
+            return (int(base[0] * part_alpha), int(base[1] * part_alpha), int(base[2] * part_alpha))
 
         # spawn particles
         if is_hit and vol > 1.5:
@@ -1024,14 +1032,14 @@ class VisualEngine:
                 radius -= 0.05
                 life -= 1
                 if radius > 0 and life > 0 and y < h + 20:
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, -1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_part), -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'tr':
                 radius -= 0.03
                 life -= 1
                 if radius > 0 and life > 0:
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_top, -1)
-                    cv2.line(frame, (int(x), int(y)), (int(x - vx*2), int(y - vy*2)), self.col_part, 1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_top), -1)
+                    cv2.line(frame, (int(x), int(y)), (int(x - vx*2), int(y - vy*2)), pcol(self.col_part), 1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'pt':
                 x += math.sin(y * 0.05) * 0.8
@@ -1039,7 +1047,7 @@ class VisualEngine:
                 life -= 1
                 extra += 0.08
                 if radius > 0 and life > 0 and y < h + 20:
-                    self._draw_star(frame, int(x), int(y), max(1, int(radius)), extra, self.col_part)
+                    self._draw_star(frame, int(x), int(y), max(1, int(radius)), extra, pcol(self.col_part))
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'sm':
                 # smoke: membesar & memudar — tampilan asap lembut
@@ -1054,7 +1062,7 @@ class VisualEngine:
                     y1 = max(0, min(h - d, int(y) - r_int - 3))
                     smoke_patch = np.zeros((d, d, 3), dtype=np.uint8)
                     cx_sm, cy_sm = r_int + 3, r_int + 3
-                    intensity = int(180 * fade)
+                    intensity = int(180 * fade * part_alpha)
                     cv2.circle(smoke_patch, (cx_sm, cy_sm), r_int, (intensity, intensity, intensity), -1)
                     # blur untuk efek soft
                     smoke_patch = cv2.GaussianBlur(smoke_patch, (0, 0), max(2, r_int // 3))
@@ -1067,13 +1075,13 @@ class VisualEngine:
                 x += math.sin(y * 0.08) * 0.5
                 life -= 1
                 if life > 0 and y < h + 10:
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, -1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_part), -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'rn':
                 # rain: garis vertikal tipis
                 life -= 1
                 if life > 0 and y < h + 10:
-                    cv2.line(frame, (int(x), int(y)), (int(x - vx), int(y - vy*0.3)), self.col_part, 1)
+                    cv2.line(frame, (int(x), int(y)), (int(x - vx), int(y - vy*0.3)), pcol(self.col_part), 1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'bb':
                 # bubbles: naik + goyang, border putih dengan fill transparan
@@ -1082,17 +1090,18 @@ class VisualEngine:
                 life -= 1
                 if radius > 1 and life > 0 and y > -10:
                     # fill transparent (mix with bg - we use thin outline instead)
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), self.col_part, 1)
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)-1), self.col_part, -1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_part), 1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)-1), pcol(self.col_part), -1)
                     # highlight spot di pojok
                     hs = max(1, int(radius * 0.3))
-                    cv2.circle(frame, (int(x) - int(radius*0.3), int(y) - int(radius*0.3)), hs, (255, 255, 255), -1)
+                    cv2.circle(frame, (int(x) - int(radius*0.3), int(y) - int(radius*0.3)), hs,
+                               pcol((255, 255, 255)), -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             else:
                 # sparkle default
                 radius -= 0.1
                 if radius > 0:
-                    cv2.circle(frame, (int(x), int(y)), int(radius), self.col_part, -1)
+                    cv2.circle(frame, (int(x), int(y)), int(radius), pcol(self.col_part), -1)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
         self.particles = alive
 
@@ -1188,8 +1197,6 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
             use_tl = cfg.get('use_tracklist', False)
             has_ts = 'track_schedule' in cfg
             if use_tl and has_ts:
-                if f == 0:
-                    print(f"[TRACKLIST] Aktif, {len(cfg['track_schedule'])} track, pos={cfg.get('tl_position','tr')}")
                 sec = f / fps
                 cur_idx = -1
                 for idx, track in enumerate(cfg['track_schedule']):
@@ -1294,6 +1301,13 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 roi_list = frame[list_y:list_y + list_h, list_x:list_x + list_w]
                 if blend_alpha > 0:
                     cv2.addWeighted(overlay_list, blend_alpha, roi_list, 1.0 - blend_alpha, 0, roi_list)
+                else:
+                    # transparent: hanya salin pixel teks/border yang berwarna,
+                    # biarkan background video tetap terlihat (overlay_list berisi nol
+                    # kecuali area teks/aksen → gunakan mask "bukan hitam murni")
+                    mask = cv2.cvtColor(overlay_list, cv2.COLOR_BGR2GRAY)
+                    _, mask = cv2.threshold(mask, 1, 255, cv2.THRESH_BINARY)
+                    roi_list[mask > 0] = overlay_list[mask > 0]
 
             # ── WATERMARK TEKS ──
             if cfg.get('use_watermark', False):
@@ -1519,11 +1533,28 @@ def background_worker():
             if not isinstance(preset, dict):
                 preset = {"color_bot": "#00d4ff", "color_top": "#7c5cfc", "color_part": "#ffffff", "pos_x": 50, "pos_y": 85, "width_pct": 60, "max_height": 40, "idle_height": 5, "bar_count": 64, "reactivity": 0.66, "spacing": 3, "part_amount": 3, "part_speed": 1.0, "effect_type": "spectrum", "use_beat_pulse": False, "particle_type": "sparkle", "fade_duration": 0, "use_watermark": False, "wm_text": "", "wm_color": "#ffffff", "wm_font": "M", "wm_size": 24, "wm_position": "bl", "wm_move": "none", "use_tracklist": False, "tl_font": "M", "tl_size": "medium", "tl_position": "tr", "tl_bg": "dark", "tl_title": "PLAYLIST", "tl_color": "#ffffff", "tl_active": "none", "use_timestamp": False, "ts_pos": "bl", "ts_font": "M", "ts_size": 20, "ts_color": "#ffffff", "ts_offx": 50, "ts_offy": 90}
 
-            preset['yt_id'] = yt_id 
+            preset['yt_id'] = yt_id
             preset['use_floating_card'] = task.get('use_floating_card', False)
             preset['use_tracklist'] = task.get('use_tracklist', preset.get('use_tracklist', False))
             preset['use_watermark'] = task.get('use_watermark', preset.get('use_watermark', False))
             preset['use_timestamp'] = task.get('use_timestamp', preset.get('use_timestamp', False))
+
+            # 🐛 FIX: di mode Random/Smart, preset dibangun ulang sehingga styling
+            # tracklist/watermark/timestamp & pengaturan partikel yang dipilih user HILANG.
+            # Karena itu kita selalu mengirim `vis_config` penuh dari frontend dan di sini
+            # kita merge field styling-nya kembali ke preset agar hasil render sesuai preview.
+            user_cfg = task.get('vis_config') if isinstance(task.get('vis_config'), dict) else {}
+            if vis_mode in ('random', 'smart'):
+                for k in ('use_tracklist', 'tl_font', 'tl_size', 'tl_position', 'tl_bg',
+                          'tl_title', 'tl_color', 'tl_active',
+                          'use_watermark', 'wm_text', 'wm_color', 'wm_font', 'wm_size',
+                          'wm_position', 'wm_move', 'wm_speed',
+                          'use_timestamp', 'ts_pos', 'ts_font', 'ts_size', 'ts_color',
+                          'ts_offx', 'ts_offy',
+                          'particle_type', 'part_size', 'part_life', 'part_opacity',
+                          'part_density', 'fade_duration'):
+                    if k in user_cfg:
+                        preset[k] = user_cfg[k]
             preset['track_schedule'] = track_schedule
             preset['channel_name'] = ch_name
 
@@ -1544,6 +1575,8 @@ def background_worker():
             cut_duration = float(task.get('cut_duration', 5))
             cut_remainder = task.get('cut_remainder', 'end')
             cut_use_remainder = task.get('cut_use_remainder', True)
+            use_transition = task.get('use_transition', False)
+            trans_dur = min(2.0, max(0.1, float(task.get('transition_duration', 0.5))))
             if smart_cut and cut_duration > 0 and base_duration_sec > cut_duration:
                 with db_lock:
                     for d in active_tasks:
@@ -1572,17 +1605,15 @@ def background_worker():
                 chunks = chunks[:full_chunks]
 
                 if len(chunks) >= 2:
-                    # acak urutan chunk
-                    random.shuffle(chunks)
+                    # 🐛 FIX: Jangan acak urutan chunk jika tracklist/floating card aktif.
+                    # Shuffle akan mengacak timeline sehingga daftar lagu yang sudah
+                    # di-overlay (sesuai urutan audio) menjadi kacau & tidak sinkron.
+                    use_overlay_timeline = bool(task.get('use_tracklist', False)) or bool(task.get('use_floating_card', False))
+                    if not use_overlay_timeline:
+                        random.shuffle(chunks)
 
-                    # siapkan concat file
-                    smart_txt = os.path.join(BASE_UPLOAD, f"smart_{task_id}.txt")
-                    with open(smart_txt, 'w', encoding='utf-8') as f:
-                        for ch in chunks:
-                            f.write(f"file '{os.path.abspath(ch).replace(chr(92), '/')}'\n")
-
-                    # sisipkan remainder (jika diaktifkan)
-                    if cut_use_remainder and remainder > 0.5:
+                    # sisipkan remainder (jika diaktifkan) → hanya relevan saat tidak pakai transisi xfade
+                    if cut_use_remainder and remainder > 0.5 and not use_transition:
                         # ekstrak remainder dari base_video
                         rem_video = os.path.join(BASE_UPLOAD, f"rem_{task_id}.mp4")
                         subprocess.run([
@@ -1592,32 +1623,81 @@ def background_worker():
                         ], check=True, capture_output=True)
 
                         if cut_remainder == 'middle':
-                            # sisipkan di tengah
-                            lines = open(smart_txt).readlines()
-                            mid = len(lines) // 2
-                            lines.insert(mid, f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
-                            with open(smart_txt, 'w') as f: f.writelines(lines)
+                            mid = len(chunks) // 2
+                            chunks.insert(mid, rem_video)
                         elif cut_remainder == 'random':
-                            # sisipkan di posisi acak
-                            lines = open(smart_txt).readlines()
-                            pos = random.randint(0, len(lines))
-                            lines.insert(pos, f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
-                            with open(smart_txt, 'w') as f: f.writelines(lines)
+                            pos = random.randint(0, len(chunks))
+                            chunks.insert(pos, rem_video)
                         else:
-                            # end - tambah di akhir
-                            with open(smart_txt, 'a') as f:
-                                f.write(f"file '{os.path.abspath(rem_video).replace(chr(92), '/')}'\n")
+                            chunks.append(rem_video)
 
-                    # concat ulang
                     smart_video = os.path.join(BASE_UPLOAD, f"smart_{task_id}.mp4")
-                    subprocess.run([
-                        get_ffmpeg_path(), '-y', '-threads', '2', '-f', 'concat', '-safe', '0',
-                        '-i', smart_txt, '-c', 'copy', smart_video
-                    ], check=True, capture_output=True)
+
+                    if use_transition and trans_dur > 0:
+                        # 🌊 Transisi halus antar chunk: xfade (video) + acrossfade (audio)
+                        with db_lock:
+                            for d in active_tasks:
+                                if d['id'] == task_id: d['status'] = f"Transisi {trans_dur}s antar potongan... 🌊"
+                        save_tasks_db()
+
+                        # hitung durasi tiap chunk via ffprobe
+                        chunk_durs = []
+                        for ch in chunks:
+                            p = subprocess.run([get_ffprobe_path(), '-v', 'error', '-show_entries',
+                                'format=duration', '-of', 'csv=p=0', ch],
+                                capture_output=True, text=True)
+                            try: chunk_durs.append(float(p.stdout.strip()))
+                            except: chunk_durs.append(cut_duration)
+
+                        # sesuaikan trans_dur agar tidak melebihi durasi chunk terkecil
+                        min_dur = min(chunk_durs)
+                        if trans_dur >= min_dur:
+                            trans_dur = max(0.1, min_dur * 0.5)
+
+                        ff = get_ffmpeg_path()
+                        cmd = [ff, '-y']
+                        for ch in chunks:
+                            cmd.extend(['-i', ch])
+
+                        v_parts = []
+                        a_parts = []
+                        for i in range(len(chunks) - 1):
+                            cum = sum(chunk_durs[:i+1])
+                            off = max(0, cum - (i + 1) * trans_dur)
+                            if i == 0:
+                                v_parts.append(f"[{i}:v][{i+1}:v]xfade=transition=fade:duration={trans_dur}:offset={off}[v{i}]")
+                                a_parts.append(f"[{i}:a][{i+1}:a]acrossfade=d={trans_dur}[a{i}]")
+                            else:
+                                v_parts.append(f"[v{i-1}][{i+1}:v]xfade=transition=fade:duration={trans_dur}:offset={off}[v{i}]")
+                                a_parts.append(f"[a{i-1}][{i+1}:a]acrossfade=d={trans_dur}[a{i}]")
+
+                        last_v = f"v{len(chunks)-2}"
+                        last_a = f"a{len(chunks)-2}"
+                        combined = ';'.join(v_parts + a_parts)
+
+                        subprocess.run(cmd + [
+                            '-filter_complex', combined,
+                            '-map', f'[{last_v}]', '-map', f'[{last_a}]',
+                            '-c:v', 'libx264', '-preset', 'fast', '-pix_fmt', 'yuv420p',
+                            '-c:a', 'aac', smart_video
+                        ], check=True, capture_output=True)
+
+                        total_dur = sum(chunk_durs) - trans_dur * (len(chunks) - 1)
+                        base_duration_sec = total_dur
+                    else:
+                        # concat cepat tanpa transisi (copy stream)
+                        smart_txt = os.path.join(BASE_UPLOAD, f"smart_{task_id}.txt")
+                        with open(smart_txt, 'w', encoding='utf-8') as f:
+                            for ch in chunks:
+                                f.write(f"file '{os.path.abspath(ch).replace(chr(92), '/')}'\n")
+                        subprocess.run([
+                            get_ffmpeg_path(), '-y', '-threads', '2', '-f', 'concat', '-safe', '0',
+                            '-i', smart_txt, '-c', 'copy', smart_video
+                        ], check=True, capture_output=True)
+                        base_duration_sec = full_chunks * cut_duration + (remainder if (cut_use_remainder and remainder > 0.5) else 0)
 
                     # ganti base_video dengan hasil smart cut
                     shutil.move(smart_video, base_video)
-                    base_duration_sec = full_chunks * cut_duration + (remainder if remainder > 0.5 else 0)
 
                 # cleanup segment files
                 shutil.rmtree(seg_dir, ignore_errors=True)
@@ -1766,8 +1846,24 @@ def background_worker():
                                 
                         try:
                             if task.get('playlist_id'):
-                                youtube.playlistItems().insert(part='snippet', body={'snippet': {'playlistId': task['playlist_id'], 'resourceId': {'kind': 'youtube#video', 'videoId': video_id}}}).execute()
-                        except: pass
+                                # 🐛 FIX: retry playlist insert (sebelumnya error ditelan diam-diam).
+                                # Coba beberapa kali untuk menghindari kegagalan sesaat jaringan/kuota
+                                # atau videoNotFound karena propagasi YT yang lambat.
+                                playlist_inserted = False
+                                for _attempt in range(3):
+                                    try:
+                                        youtube.playlistItems().insert(part='snippet', body={'snippet': {'playlistId': task['playlist_id'], 'resourceId': {'kind': 'youtube#video', 'videoId': video_id}}}).execute()
+                                        playlist_inserted = True
+                                        break
+                                    except HttpError as ple:
+                                        if ple.resp.status >= 500 or ple.resp.status == 404:
+                                            time.sleep(5)
+                                            continue
+                                        raise
+                                if not playlist_inserted:
+                                    print(f"[KeiBot] Peringatan: video {video_id} GAGAL masuk playlist {task['playlist_id']} setelah retry.")
+                        except Exception as ple_err:
+                            print(f"[KeiBot] Playlist insert gagal untuk video {video_id}: {ple_err}")
                         move_to_history(task_id, f"Tayang! ✅ <a href='https://youtu.be/{video_id}' target='_blank'>[Lihat]</a>")
                         upload_berhasil = True
                         break
@@ -2237,7 +2333,7 @@ def batch_create():
             "bg_count": data.get('bg_count', 1), 
             "target_duration_hours": vid_duration,
             "vis_mode": data.get('vis_mode'), "vis_preset": data.get('vis_preset'),
-            "vis_presets_allowed": data.get('vis_presets_allowed', []), "description": data.get('description', ''),
+            "vis_config": data.get('vis_config', {}), "vis_presets_allowed": data.get('vis_presets_allowed', []), "description": data.get('description', ''),
             "tags": data.get('tags', ''), "privacy": data.get('privacy', 'public'), "playlist_id": data.get('playlist_id', ''),
             "use_floating_card": data.get('use_floating_card', False),
             "use_tracklist": data.get('use_tracklist', False),
@@ -2247,6 +2343,8 @@ def batch_create():
             "cut_duration": data.get('cut_duration', 5),
             "cut_remainder": data.get('cut_remainder', 'end'),
             "cut_use_remainder": data.get('cut_use_remainder', True),
+            "use_transition": data.get('use_transition', False),
+            "transition_duration": data.get('transition_duration', 0.5),
             "output_dest": data.get('output_dest', 'youtube'),
             "vps_folder": data.get('vps_folder', '/root/keibot-output')
         }

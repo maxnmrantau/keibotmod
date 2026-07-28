@@ -721,7 +721,13 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
                   <input type="checkbox" id="bc-cut-use-remainder" checked style="width:14px;height:14px;accent-color:var(--accent);">
 	                  <span style="font-size:10px;font-weight:600;">Pakai sisa potongan</span>
 	                </label>
-			              </div>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);margin-left:4px;">
+                  <input type="checkbox" id="bc-use-transition" style="width:14px;height:14px;accent-color:var(--accent);" onchange="var d=document.getElementById('sc-trans-dur');var l=document.getElementById('sc-trans-label');d.style.display=this.checked?'inline-block':'none';l.style.display=this.checked?'inline':'none';">
+                  <span style="font-size:10px;font-weight:600;">🌊 Transisi</span>
+                </label>
+                <input type="number" id="sc-trans-dur" value="0.5" min="0.1" max="2" step="0.1" style="display:none;width:55px;padding:4px 6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                <span id="sc-trans-label" style="display:none;font-size:10px;color:var(--muted);font-weight:600;">detik</span>
+				              </div>
 			            </div>
 			          </div>
 
@@ -2035,6 +2041,9 @@ function processBatch() {
     privacy: document.getElementById('bc-privacy').value,
     vis_mode: visMode,
     vis_preset: visMode === 'random' ? 'random' : getVisConfig(),
+    // Selalu kirim config visualizer penuh (warna/tracklist/watermark/timestamp)
+    // supaya styling user tetap dihormati di mode Random & Smart.
+    vis_config: getVisConfig(),
     vis_presets_allowed: selectedPresets,
     generated_titles: generated_titles,
     use_floating_card: is_floating,
@@ -2046,7 +2055,9 @@ function processBatch() {
     smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
     cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
     cut_remainder: document.getElementById('bc-cut-remainder') ? document.getElementById('bc-cut-remainder').value : 'end',
-    cut_use_remainder: document.getElementById('bc-cut-use-remainder') ? document.getElementById('bc-cut-use-remainder').checked : true
+    cut_use_remainder: document.getElementById('bc-cut-use-remainder') ? document.getElementById('bc-cut-use-remainder').checked : true,
+    use_transition: document.getElementById('bc-use-transition') ? document.getElementById('bc-use-transition').checked : false,
+    transition_duration: document.getElementById('sc-trans-dur') ? parseFloat(document.getElementById('sc-trans-dur').value) || 0.5 : 0.5
   };
 
   fetch('/api/batch_create', {
