@@ -600,12 +600,17 @@ class VisualEngine:
     def _draw_circular(self, frame, n, idle, space, px, py, wp, max_h, w, h):
         cx = int(w * px)
         cy = int(h * py)
-        radius = int((w * wp) / 2)
+        # 🐛 FIX: radius pakai min(w,h) (bukan w saja) agar konsisten dengan preview
+        # canvas. Sebelumnya radius terlalu besar di video landscape (16:9).
+        radius = int(min(w, h) * (wp / 2))
         angle_step = (2 * math.pi) / n
         bar_w = max(2, int((2 * math.pi * radius - space * n) / n))
 
         for i in range(n):
-            height = int(max(idle, min(max_h * 0.5, self.bar_h[i] * max_h)))
+            # 🐛 FIX: value dikalikan 0.5 & clamp max_h*0.5 agar tinggi bar
+            # konsisten dengan preview (preview pakai prev_bars[i]*0.5, max_h/200).
+            # max_h di sini sudah = h*(max_height/100), jadi max_h*0.5 = h*(max_height/200).
+            height = int(max(idle, min(max_h * 0.5, self.bar_h[i] * max_h * 0.5)))
             if height <= 0: continue
             angle = i * angle_step - math.pi / 2
 
@@ -726,11 +731,15 @@ class VisualEngine:
     def _draw_sunburst(self, frame, n, idle, space, px, py, wp, max_h, w, h):
         cx = int(w * px)
         cy = int(h * py)
-        max_r = int((w * wp) / 2)
+        # 🐛 FIX: max_r pakai min(w,h) (bukan w saja) agar konsisten dengan preview.
+        max_r = int(min(w, h) * (wp / 2))
         angle_step = (2 * math.pi) / n
 
         for i in range(n):
-            height = int(max(idle, min(max_h * 0.6, self.bar_h[i] * max_h)))
+            # 🐛 FIX: clamp max_h*0.666 + value *0.666 agar konsisten dengan preview
+            # (preview: maxBarH = ch*(max_height/150), h_val = prev_bars[i]*0.666).
+            # max_h di sini = h*(max_height/100); 0.666*max_h = h*(max_height/150).
+            height = int(max(idle, min(max_h * 0.666, self.bar_h[i] * max_h * 0.666)))
             if height <= 0: continue
             angle = i * angle_step - math.pi / 2
 
@@ -877,8 +886,10 @@ class VisualEngine:
             # glow tipis
             overlay_sin = frame.copy()
             for i in range(n):
-                h = max(0, b_y - pts[i][1])
-                cv2.line(overlay_sin, (pts[i][0], b_y), (pts[i][0], pts[i][1]), self.col_bot, max(1, int(h * 0.15)))
+                # 🐛 FIX: ganti nama variabel 'h' -> 'seg' agar tidak menimpa
+                # parameter frame-height 'h' (latent bug: h tertimpa di loop ini).
+                seg = max(0, b_y - pts[i][1])
+                cv2.line(overlay_sin, (pts[i][0], b_y), (pts[i][0], pts[i][1]), self.col_bot, max(1, int(seg * 0.15)))
             cv2.addWeighted(overlay_sin, 0.3, frame, 0.7, 0, frame)
 
     # ═══════════════════════════════════════════════════════════
@@ -924,11 +935,14 @@ class VisualEngine:
         for r in range(rows):
             for c in range(cols):
                 idx = (r * cols + c) % n
-                amp = min(1.0, self.bar_h[idx] / max(max_h, 1))
+                # 🐛 FIX: sebelumnya amp = bar_h/max_h (nilai 0..0.66 dibagi ~432px
+                # = hampir 0 -> semua dot jadi 1px). self.bar_h sudah bernilai 0..~1
+                # (relatif, hasil smoothing), jadi cukup clamp ke 1.0 agar dot
+                # membesar sesuai amplitudo audio — konsisten dengan preview.
+                amp = min(1.0, max(0.0, self.bar_h[idx]))
                 dot_r = max(1, int(1 + amp * max_dot))
                 dx = start_x + c * cell_w + cell_w // 2
                 dy = start_y + r * cell_h + cell_h // 2
-                t = idx / max(1, n - 1)
                 color = self._bar_color(int(idx), int(n))
                 cv2.circle(frame, (dx, dy), dot_r, color, -1)
 
