@@ -1270,16 +1270,22 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     y0 = pad + 14 + shown * item_h
                     is_active = (i == cur_idx)
 
-                    if is_active:
-                        cv2.rectangle(overlay_list, (pad, y0), (list_w - pad, y0 + item_h - 2), (70, 140, 60), -1)
-                        mark = "▶ "
-                    else:
-                        mark = "   "
-
-                    num_str = f"{mark}{i+1}."
                     title_str = tr['title'][:35]
                     text_color = (255, 255, 255) if is_active else hex_to_rgb(tl_color)[::-1]
-                    cv2.putText(overlay_list, num_str, (pad + 4, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    # 🐛 FIX: karakter Unicode ▶ (U+25B6) tidak bisa dirender OpenCV
+                    # (Hershey fonts) -> muncul sebagai "??". Sebagai gantinya kita
+                    # gambar segitiga play manual dengan cv2.fillPoly untuk track aktif.
+                    num_x = pad + 4
+                    num_y0 = y0
+                    if is_active:
+                        cv2.rectangle(overlay_list, (pad, y0), (list_w - pad, y0 + item_h - 2), (70, 140, 60), -1)
+                        # segitiga play kecil di kiri nomor
+                        tcx = pad + 6
+                        tcy = y0 + item_h // 2 - 1
+                        tri = np.array([[tcx, tcy - 5], [tcx, tcy + 5], [tcx + 8, tcy]], np.int32)
+                        cv2.fillPoly(overlay_list, [tri], (255, 255, 255))
+                        num_x = pad + 20
+                    cv2.putText(overlay_list, f"{i+1}.", (num_x, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
                     # animasi active track
                     t_y = y0
                     t_x = pad + 46
@@ -1545,14 +1551,29 @@ def background_worker():
             # kita merge field styling-nya kembali ke preset agar hasil render sesuai preview.
             user_cfg = task.get('vis_config') if isinstance(task.get('vis_config'), dict) else {}
             if vis_mode in ('random', 'smart'):
-                for k in ('use_tracklist', 'tl_font', 'tl_size', 'tl_position', 'tl_bg',
-                          'tl_title', 'tl_color', 'tl_active',
-                          'use_watermark', 'wm_text', 'wm_color', 'wm_font', 'wm_size',
-                          'wm_position', 'wm_move', 'wm_speed',
-                          'use_timestamp', 'ts_pos', 'ts_font', 'ts_size', 'ts_color',
-                          'ts_offx', 'ts_offy',
-                          'particle_type', 'part_size', 'part_life', 'part_opacity',
-                          'part_density', 'fade_duration'):
+                # 🐛 FIX: di mode Random/Smart, preset dibangun ulang sehingga SEMUA
+                # pengaturan spectrum user (tinggi/posisi/lebar/jumlah bar/warna/dll)
+                # HILANG dan diganti nilai random. Frontend selalu mengirim `vis_config`
+                # penuh, jadi kita merge kembali field spectrum inti + styling overlay
+                # agar hasil render benar-benar sesuai preview live.
+                for k in (
+                    # ── spectrum dasar (tinggi, posisi, lebar, bar, reaktif, spasi) ──
+                    'max_height', 'pos_x', 'pos_y', 'width_pct', 'idle_height',
+                    'bar_count', 'reactivity', 'spacing', 'effect_type', 'bar_style',
+                    'use_beat_pulse', 'part_amount', 'part_speed', 'smoothing',
+                    'color_bot', 'color_top', 'color_part',
+                    # ── tracklist ──
+                    'use_tracklist', 'tl_font', 'tl_size', 'tl_position', 'tl_bg',
+                    'tl_title', 'tl_color', 'tl_active',
+                    # ── watermark ──
+                    'use_watermark', 'wm_text', 'wm_color', 'wm_font', 'wm_size',
+                    'wm_position', 'wm_move', 'wm_speed',
+                    # ── timestamp ──
+                    'use_timestamp', 'ts_pos', 'ts_font', 'ts_size', 'ts_color',
+                    'ts_offx', 'ts_offy',
+                    # ── partikel lanjutan ──
+                    'particle_type', 'part_size', 'part_life', 'part_opacity',
+                    'part_density', 'fade_duration'):
                     if k in user_cfg:
                         preset[k] = user_cfg[k]
             preset['track_schedule'] = track_schedule
