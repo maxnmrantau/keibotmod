@@ -46,32 +46,45 @@ def _resolve_ttf(font_key='M'):
 
 def _put_text_pil(frame, text, org, font_ttf, size, color_bgr, thickness=1):
     """Gambar teks TTF ke frame OpenCV (BGR) via PIL (ROI-based, cepat).
-    org = (x, y) baseline kiri-atas. Mengembalikan True bila berhasil."""
+    org = (x, y) = BASELINE kiri-bawah (kompatibel dengan konvensi cv2.putText),
+    lalu dikonversi ke top-left untuk PIL. Mengembalikan True bila berhasil."""
     if not _HAS_PIL or font_ttf is None or size <= 0:
+        return False
+    if frame is None or frame.size == 0:
+        return False
+    if not text or not str(text).strip():
         return False
     try:
         pil_size = max(8, int(round(size)))
         font = _get_pil_font(font_ttf, pil_size)
         if font is None:
             return False
+        # konversi org baseline → top-left PIL (PIL pakai anchor 'la' = left-ascender)
+        asc, desc = font.getmetrics()
         # ukur teks untuk menentukan ROI
         bbox = font.getbbox(str(text))
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        ox, oy = int(org[0]), int(org[1])
+        ox = int(org[0]) - bbox[0]
+        # oy_top = posisi baseline - ascent
+        oy_top = int(org[1]) - asc
+        oy_bot = oy_top + th
         fh, fw = frame.shape[:2]
         # padding untuk stroke
-        pad = thickness + 2
+        pad = max(thickness + 2, 4)
         rx0 = max(0, ox - pad)
-        ry0 = max(0, oy - pad)
+        ry0 = max(0, oy_top - pad)
         rx1 = min(fw, ox + tw + pad)
-        ry1 = min(fh, oy + th + pad)
+        ry1 = min(fh, oy_bot + pad)
         if rx1 <= rx0 or ry1 <= ry0:
             return False
         roi = frame[ry0:ry1, rx0:rx1]
+        # pastikan array contiguous (cv2.cvtColor butuh C-contiguous)
+        if not roi.flags['C_CONTIGUOUS']:
+            roi = np.ascontiguousarray(roi)
         img = PILImage.fromarray(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
         draw = PILDraw.Draw(img)
         rgb = (int(color_bgr[2]), int(color_bgr[1]), int(color_bgr[0]))
-        lx, ly = ox - rx0, oy - ry0
+        lx, ly = ox - rx0, oy_top - ry0
         if thickness >= 2:
             stroke_w = max(1, int(thickness))
             draw.text((lx, ly), str(text), font=font, fill=rgb,
@@ -107,6 +120,23 @@ def _draw_text(frame, text, org, cv_font, fontScale, color, thickness, lineType,
             return
     # fallback: cv2 Hershey
     cv2.putText(frame, text, org, cv_font, fontScale, color, thickness, lineType)
+
+def _get_text_size(text, ttf_path, pil_size, cv_font, cv_fontScale, cv_thickness):
+    """Return (width, height) teks, pakai TTF bila PIL tersedia.
+    Ukuran penting untuk posisi watermark/timestamp (tr, br, center)."""
+    if ttf_path and pil_size and pil_size > 0 and _HAS_PIL:
+        font = _get_pil_font(ttf_path, pil_size)
+        if font is not None:
+            try:
+                bbox = font.getbbox(str(text))
+                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                asc, desc = font.getmetrics()
+                return (tw, asc)  # asc ≈ tinggi baseline untuk posisi
+            except Exception:
+                pass
+    # fallback: cv2 Hershey
+    (w, h), _ = cv2.getTextSize(str(text), cv_font, cv_fontScale, cv_thickness)
+    return (w, h)
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaFileUpload
@@ -1386,7 +1416,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.82
 
                 # header
-                _draw_text(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 2), tfont, header_s, hex_to_rgb(tl_color)[::-1], 1, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=16)
+                _draw_text(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 12), tfont, header_s, hex_to_rgb(tl_color)[::-1], 1, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=16)
 
                 start_idx = max(0, cur_idx - 4)
                 shown = 0
@@ -1410,7 +1440,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         tri = np.array([[tcx, tcy - 5], [tcx, tcy + 5], [tcx + 8, tcy]], np.int32)
                         cv2.fillPoly(overlay_list, [tri], (255, 255, 255))
                         num_x = pad + 20
-                    _draw_text(overlay_list, f"{i+1}.", (num_x, y0 + 6), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
+                    _draw_text(overlay_list, f"{i+1}.", (num_x, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
                     # animasi active track
                     t_y = y0
                     t_x = pad + 46
@@ -1425,7 +1455,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             scroll_off = int((f / fps * 40) % (len(title_str) * 12))
                             t_x = pad + 46 - scroll_off
                     if not skip_draw:
-                        _draw_text(overlay_list, title_str, (t_x, t_y + 6), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
+                        _draw_text(overlay_list, title_str, (t_x, t_y + 14), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
                     shown += 1
 
                 # blend ke frame
@@ -1463,8 +1493,8 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     font = font_map.get(wm_font, cv2.FONT_HERSHEY_SIMPLEX)
                     thickness = max(1, wm_size // 14)
 
-                    # ukuran teks untuk posisi
-                    (tw, th), _ = cv2.getTextSize(wm_text, font, wm_size * 0.06, thickness)
+                    # ukuran teks untuk posisi (pakai TTF jika PIL tersedia)
+                    tw, th = _get_text_size(wm_text, _ttf_bold, int(wm_size), font, wm_size * 0.06, thickness)
                     margin = 30
 
                     # posisi dasar
@@ -1537,7 +1567,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 ts_margin = 20
                 total_sec_int = int(f / fps)
                 ts_text = f"{total_sec_int//3600}:{total_sec_int%3600//60:02d}:{total_sec_int%60:02d}"
-                (tw, th), _ = cv2.getTextSize(ts_text, ts_font, ts_size * 0.05, 1)
+                tw, th = _get_text_size(ts_text, _ttf_reg, ts_size, ts_font, ts_size * 0.05, 1)
                 # posisi
                 base_tx = {'tl': ts_margin, 'bl': ts_margin, 'ct': int(w * ts_offx), 'cb': int(w * ts_offx)}
                 base_ty = {'tl': ts_margin + th, 'ct': ts_margin + th, 'bl': h - ts_margin, 'cb': h - ts_margin}
