@@ -8,7 +8,105 @@ import secrets
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, session
 import requests
 
-from googleapiclient.discovery import build
+# 🎨 PIL untuk font TTF (agar teks render mirip preview browser).
+# Fallback aman jika PIL tidak terinstall.
+try:
+    from PIL import ImageFont, Image as PILImage, ImageDraw as PILDraw
+    _HAS_PIL = True
+except Exception:
+    _HAS_PIL = False
+
+# ── Resolver path font TTF cross-platform ──
+# Prioritas: Linux DejaVu (mirip Arial) → Windows Arial → DejaVuSans.
+def _resolve_ttf(font_key='M'):
+    """Kembalikan path file .ttf yang cocok untuk key font (M/S/I/C).
+    Mengembalikan None bila tidak ada font TTF yang tersedia (caller fallback ke cv2)."""
+    key = str(font_key).upper() if font_key else 'M'
+    # kandidat per OS (Linux VPS & Windows dev)
+    linux_bold = [
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    ]
+    linux_reg = [
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+    ]
+    win_bold = ['C:/Windows/Fonts/arialbd.ttf', 'C:/Windows/Fonts/segoeuib.ttf']
+    win_reg  = ['C:/Windows/Fonts/arial.ttf', 'C:/Windows/Fonts/segoeui.ttf']
+    bold = linux_bold + win_bold
+    reg  = linux_reg + win_reg
+    # 'I' (Impact) & 'C' (Condensed) → pakai bold untuk nuansa tebal
+    pool = bold if key in ('I', 'C', 'M') else reg
+    for p in pool:
+        if os.path.exists(p):
+            return p
+    return None
+
+def _put_text_pil(frame, text, org, font_ttf, size, color_bgr, thickness=1):
+    """Gambar teks TTF ke frame OpenCV (BGR) via PIL (ROI-based, cepat).
+    org = (x, y) baseline kiri-atas. Mengembalikan True bila berhasil."""
+    if not _HAS_PIL or font_ttf is None or size <= 0:
+        return False
+    try:
+        pil_size = max(8, int(round(size)))
+        font = _get_pil_font(font_ttf, pil_size)
+        if font is None:
+            return False
+        # ukur teks untuk menentukan ROI
+        bbox = font.getbbox(str(text))
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        ox, oy = int(org[0]), int(org[1])
+        fh, fw = frame.shape[:2]
+        # padding untuk stroke
+        pad = thickness + 2
+        rx0 = max(0, ox - pad)
+        ry0 = max(0, oy - pad)
+        rx1 = min(fw, ox + tw + pad)
+        ry1 = min(fh, oy + th + pad)
+        if rx1 <= rx0 or ry1 <= ry0:
+            return False
+        roi = frame[ry0:ry1, rx0:rx1]
+        img = PILImage.fromarray(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
+        draw = PILDraw.Draw(img)
+        rgb = (int(color_bgr[2]), int(color_bgr[1]), int(color_bgr[0]))
+        lx, ly = ox - rx0, oy - ry0
+        if thickness >= 2:
+            stroke_w = max(1, int(thickness))
+            draw.text((lx, ly), str(text), font=font, fill=rgb,
+                      stroke_width=stroke_w, stroke_fill=rgb)
+        else:
+            draw.text((lx, ly), str(text), font=font, fill=rgb)
+        frame[ry0:ry1, rx0:rx1] = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        return True
+    except Exception:
+        return False
+
+# ── Cache font PIL agar tidak reload setiap frame ──
+_pil_font_cache = {}
+
+def _get_pil_font(font_ttf, size):
+    """Return cached PIL ImageFont, atau None."""
+    if not _HAS_PIL or font_ttf is None or size <= 0:
+        return None
+    key = (font_ttf, max(8, int(round(size))))
+    if key not in _pil_font_cache:
+        try:
+            _pil_font_cache[key] = ImageFont.truetype(font_ttf, key[1])
+        except Exception:
+            return None
+    return _pil_font_cache[key]
+
+def _draw_text(frame, text, org, cv_font, fontScale, color, thickness, lineType,
+               ttf_path=None, pil_size=None):
+    """Gambar teks: coba PIL (TTF) dulu, fallback ke cv2 Hershey font.
+    ttf_path + pil_size → gunakan PIL. Jika PIL gagal → cv2.putText fallback."""
+    if ttf_path and pil_size and pil_size > 0:
+        if _put_text_pil(frame, text, org, ttf_path, pil_size, color, thickness):
+            return
+    # fallback: cv2 Hershey
+    cv2.putText(frame, text, org, cv_font, fontScale, color, thickness, lineType)
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaFileUpload
@@ -621,10 +719,10 @@ class VisualEngine:
             oy = int(cy + (radius + height) * math.sin(angle))
 
             color = self._bar_color(i, n)
-            cv2.line(frame, (ix, iy), (ox, oy), color, bar_w)
+            cv2.line(frame, (ix, iy), (ox, oy), color, bar_w, cv2.LINE_AA)
 
         # lingkaran dasar tipis
-        cv2.circle(frame, (cx, cy), radius, self.col_bot, 1)
+        cv2.circle(frame, (cx, cy), radius, self.col_bot, 1, cv2.LINE_AA)
 
     # ═══════════════════════════════════════════════════════════
     #  WAVEFORM  (gelombang audio klasik)
@@ -654,12 +752,12 @@ class VisualEngine:
         # garis utama (atas) tebal
         pts_line_upper = np.array(pts_upper, dtype=np.int32)
         if len(pts_line_upper) >= 2:
-            cv2.polylines(frame, [pts_line_upper], False, self.col_top, 2)
+            cv2.polylines(frame, [pts_line_upper], False, self.col_top, 2, cv2.LINE_AA)
 
         # garis bawah tipis (refleksi)
         pts_line_lower = np.array(pts_lower, dtype=np.int32)
         if len(pts_line_lower) >= 2:
-            cv2.polylines(frame, [pts_line_lower], False, self.col_bot, 1)
+            cv2.polylines(frame, [pts_line_lower], False, self.col_bot, 1, cv2.LINE_AA)
 
     # ═══════════════════════════════════════════════════════════
     #  MIRROR SPECTRUM  (bar spectrum + refleksi simetris)
@@ -719,8 +817,10 @@ class VisualEngine:
                 bg = cv2.resize(self.grad, (bar_w, height))
                 overlay[y1s:y2s, x1s:x2s] = bg[y1s-y1:y1s-y1+hs, x1s-x1:x1s-x1+ws]
 
-        # bloom layer (blur)
-        bloom = cv2.GaussianBlur(overlay, (21, 21), 0)
+        # bloom layer (blur) — kernel adaptif terhadap resolusi agar dekati
+        # Canvas shadowBlur=20 (preview ~450px; di render perlu proporsional).
+        blur_k = max(11, int(20 * h / 450) | 1)  # ganjil, min 11
+        bloom = cv2.GaussianBlur(overlay, (blur_k, blur_k), 0)
         cv2.addWeighted(bloom, 0.7, frame, 1.0, 0, frame)
         # core layer (tajam)
         cv2.addWeighted(overlay, 0.9, frame, 1.0, 0, frame)
@@ -751,7 +851,7 @@ class VisualEngine:
             oy = int(cy + (inner_r + height) * math.sin(angle))
 
             color = self._bar_color(i, n)
-            cv2.line(frame, (ix, iy), (ox, oy), color, 3)
+            cv2.line(frame, (ix, iy), (ox, oy), color, 3, cv2.LINE_AA)
 
     # ═══════════════════════════════════════════════════════════
     #  PIXEL BLOCKS  (8-bit retro, blok kotak besar)
@@ -859,7 +959,7 @@ class VisualEngine:
             h2 = max(idle, min(max_h, self.bar_h[i] * max_h))
             x1 = int(s_x + (i-1) * step)
             x2 = int(s_x + i * step)
-            cv2.line(frame, (x1, int(b_y - h1)), (x2, int(b_y - h2)), self.col_top, 3)
+            cv2.line(frame, (x1, int(b_y - h1)), (x2, int(b_y - h2)), self.col_top, 3, cv2.LINE_AA)
 
     # ═══════════════════════════════════════════════════════════
     #  SINUSOIDAL  (gelombang sinusoidal berfrekuensi audio)
@@ -882,14 +982,14 @@ class VisualEngine:
             pts.append((x, y))
 
         if len(pts) >= 2:
-            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], False, self.col_top, 2)
+            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], False, self.col_top, 2, cv2.LINE_AA)
             # glow tipis
             overlay_sin = frame.copy()
             for i in range(n):
                 # 🐛 FIX: ganti nama variabel 'h' -> 'seg' agar tidak menimpa
                 # parameter frame-height 'h' (latent bug: h tertimpa di loop ini).
                 seg = max(0, b_y - pts[i][1])
-                cv2.line(overlay_sin, (pts[i][0], b_y), (pts[i][0], pts[i][1]), self.col_bot, max(1, int(seg * 0.15)))
+                cv2.line(overlay_sin, (pts[i][0], b_y), (pts[i][0], pts[i][1]), self.col_bot, max(1, int(seg * 0.15)), cv2.LINE_AA)
             cv2.addWeighted(overlay_sin, 0.3, frame, 0.7, 0, frame)
 
     # ═══════════════════════════════════════════════════════════
@@ -914,11 +1014,12 @@ class VisualEngine:
         if len(pts) >= 3:
             overlay_blob = frame.copy()
             cv2.fillPoly(overlay_blob, [np.array(pts, dtype=np.int32)], self.col_bot)
-            # blur untuk efek halus
-            overlay_blob = cv2.GaussianBlur(overlay_blob, (15, 15), 0)
+            # blur untuk efek halus — kernel adaptif terhadap resolusi
+            blur_k = max(11, int(14 * h / 450) | 1)  # ganjil, min 11
+            overlay_blob = cv2.GaussianBlur(overlay_blob, (blur_k, blur_k), 0)
             cv2.addWeighted(overlay_blob, 0.6, frame, 1.0, 0, frame)
             # core outline
-            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, self.col_top, 2)
+            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, self.col_top, 2, cv2.LINE_AA)
 
     # ═══════════════════════════════════════════════════════════
     #  HALFTONE DOTS  (titik-titik yang membesar oleh audio)
@@ -1053,7 +1154,7 @@ class VisualEngine:
                 life -= 1
                 if radius > 0 and life > 0:
                     cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_top), -1)
-                    cv2.line(frame, (int(x), int(y)), (int(x - vx*2), int(y - vy*2)), pcol(self.col_part), 1)
+                    cv2.line(frame, (int(x), int(y)), (int(x - vx*2), int(y - vy*2)), pcol(self.col_part), 1, cv2.LINE_AA)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'pt':
                 x += math.sin(y * 0.05) * 0.8
@@ -1095,7 +1196,7 @@ class VisualEngine:
                 # rain: garis vertikal tipis
                 life -= 1
                 if life > 0 and y < h + 10:
-                    cv2.line(frame, (int(x), int(y)), (int(x - vx), int(y - vy*0.3)), pcol(self.col_part), 1)
+                    cv2.line(frame, (int(x), int(y)), (int(x - vx), int(y - vy*0.3)), pcol(self.col_part), 1, cv2.LINE_AA)
                     alive.append([x, y, vx, vy, radius, life, extra, ptype])
             elif ptype == 'bb':
                 # bubbles: naik + goyang, border putih dengan fill transparan
@@ -1104,7 +1205,7 @@ class VisualEngine:
                 life -= 1
                 if radius > 1 and life > 0 and y > -10:
                     # fill transparent (mix with bg - we use thin outline instead)
-                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_part), 1)
+                    cv2.circle(frame, (int(x), int(y)), max(1, int(radius)), pcol(self.col_part), 1, cv2.LINE_AA)
                     cv2.circle(frame, (int(x), int(y)), max(1, int(radius)-1), pcol(self.col_part), -1)
                     # highlight spot di pojok
                     hs = max(1, int(radius * 0.3))
@@ -1131,7 +1232,13 @@ class VisualEngine:
 def hex_to_rgb(h): return tuple(int(str(h).lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
 
 def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg):
-    w, h = 1280, 720; fps = 30; total_f = int(duration * fps)
+    # 🎨 Resolusi dinamis: baca dari cfg ('1080' atau '720'), fallback 720.
+    _res = str(cfg.get('resolution', '720'))
+    if _res == '1080':
+        w, h = 1920, 1080
+    else:
+        w, h = 1280, 720
+    fps = 30; total_f = int(duration * fps)
     c_bot = hex_to_rgb(cfg.get('color_bot', '#10b981'))
     c_top = hex_to_rgb(cfg.get('color_top', '#0ea5e9'))
     c_part = hex_to_rgb(cfg.get('color_part', '#ffffff'))
@@ -1140,6 +1247,10 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
     bg = BackgroundManager(bg_paths, w, h)
     audio = AudioBrain(); audio.load(audio_path)
     _wm_state_ctx = {}
+    # 🎨 Resolve font TTF sekali (cross-platform: Linux DejaVu / Windows Arial).
+    # Dipakai untuk tracklist, watermark, timestamp agar mirip preview (font sistem).
+    _ttf_bold = _resolve_ttf('M')
+    _ttf_reg = _resolve_ttf('S')
     
     with db_lock:
         for d in active_tasks:
@@ -1202,9 +1313,9 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             cv2.rectangle(overlay, (15, 15), (85, 85), (60, 200, 80), -1)
                             card_title = current_track['title']
                             ch_name = cfg.get('channel_name', 'KeiBot FM')
-                            cv2.putText(overlay, card_title[:35], (105, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
-                            cv2.putText(overlay, f"Now Playing . {ch_name}", (105, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1, cv2.LINE_AA)
-                            cv2.putText(overlay, "J", (36, 65), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
+                            _draw_text(overlay, card_title[:35], (105, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=22)
+                            _draw_text(overlay, f"Now Playing . {ch_name}", (105, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=16)
+                            _draw_text(overlay, "J", (36, 65), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=48)
                             cv2.addWeighted(overlay, alpha, roi, 1 - alpha, 0, roi)
 
             # ── TRACK LIST (daftar lagu di dalam video) ──
@@ -1275,7 +1386,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                     blend_alpha = 0.82
 
                 # header
-                cv2.putText(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 12), tfont, header_s, hex_to_rgb(tl_color)[::-1], 1, cv2.LINE_AA)
+                _draw_text(overlay_list, str(cfg.get('tl_title', 'Playlist')), (pad, pad + 2), tfont, header_s, hex_to_rgb(tl_color)[::-1], 1, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=16)
 
                 start_idx = max(0, cur_idx - 4)
                 shown = 0
@@ -1299,7 +1410,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                         tri = np.array([[tcx, tcy - 5], [tcx, tcy + 5], [tcx + 8, tcy]], np.int32)
                         cv2.fillPoly(overlay_list, [tri], (255, 255, 255))
                         num_x = pad + 20
-                    cv2.putText(overlay_list, f"{i+1}.", (num_x, y0 + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                    _draw_text(overlay_list, f"{i+1}.", (num_x, y0 + 6), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
                     # animasi active track
                     t_y = y0
                     t_x = pad + 46
@@ -1314,7 +1425,7 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                             scroll_off = int((f / fps * 40) % (len(title_str) * 12))
                             t_x = pad + 46 - scroll_off
                     if not skip_draw:
-                        cv2.putText(overlay_list, title_str, (t_x, t_y + 14), tfont, font_s, text_color, 1, cv2.LINE_AA)
+                        _draw_text(overlay_list, title_str, (t_x, t_y + 6), tfont, font_s, text_color, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=13)
                     shown += 1
 
                 # blend ke frame
@@ -1403,12 +1514,12 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
 
                     # shadow
                     shadow_color = (0, 0, 0)
-                    cv2.putText(frame, wm_text, (bx+2, by+2), font, wm_size * 0.06, shadow_color, thickness, cv2.LINE_AA)
+                    _draw_text(frame, wm_text, (bx+2, by+2), font, wm_size * 0.06, shadow_color, thickness, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=int(wm_size))
                     # draw text
                     if wm_move == 'pulse':
-                        cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06 * pulse, wm_color_bgr, thickness, cv2.LINE_AA)
+                        _draw_text(frame, wm_text, (bx, by), font, wm_size * 0.06 * pulse, wm_color_bgr, thickness, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=int(wm_size * pulse))
                     else:
-                        cv2.putText(frame, wm_text, (bx, by), font, wm_size * 0.06, wm_color_bgr, thickness, cv2.LINE_AA)
+                        _draw_text(frame, wm_text, (bx, by), font, wm_size * 0.06, wm_color_bgr, thickness, cv2.LINE_AA, ttf_path=_ttf_bold, pil_size=int(wm_size))
 
             # ── TIMESTAMP ──
             if cfg.get('use_timestamp', False):
@@ -1434,8 +1545,8 @@ def render_video_core(task_id, audio_path, bg_paths, output_path, duration, cfg)
                 ty = base_ty.get(ts_pos, h - ts_margin)
                 if ts_pos in ('tr', 'br'): tx = w - tw - ts_margin
                 if ts_pos in ('br',): ty = h - ts_margin
-                cv2.putText(frame, ts_text, (tx+2, ty+2), ts_font, ts_size * 0.05, (0, 0, 0), 1, cv2.LINE_AA)
-                cv2.putText(frame, ts_text, (tx, ty), ts_font, ts_size * 0.05, ts_color_bgr, 1, cv2.LINE_AA)
+                _draw_text(frame, ts_text, (tx+2, ty+2), ts_font, ts_size * 0.05, (0, 0, 0), 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=ts_size)
+                _draw_text(frame, ts_text, (tx, ty), ts_font, ts_size * 0.05, ts_color_bgr, 1, cv2.LINE_AA, ttf_path=_ttf_reg, pil_size=ts_size)
 
             proc.stdin.write(frame.tobytes())
             
@@ -1592,6 +1703,8 @@ def background_worker():
                         preset[k] = user_cfg[k]
             preset['track_schedule'] = track_schedule
             preset['channel_name'] = ch_name
+            # resolusi render (dari task, bukan dari vis_config)
+            preset['resolution'] = task.get('resolution', '720')
 
             base_video = os.path.join(BASE_UPLOAD, f"temp_v_{task_id}.mp4")
             final_video = os.path.join(BASE_DIR, f"static/final_{task_id}.mp4")
@@ -2374,12 +2487,14 @@ def batch_create():
             "use_tracklist": data.get('use_tracklist', False),
             "use_watermark": data.get('use_watermark', False),
             "use_timestamp": data.get('use_timestamp', False),
+            "resolution": str(data.get('resolution', '720')),
             "smart_cut": data.get('smart_cut', False),
             "cut_duration": data.get('cut_duration', 5),
             "cut_remainder": data.get('cut_remainder', 'end'),
             "cut_use_remainder": data.get('cut_use_remainder', True),
             "use_transition": data.get('use_transition', False),
             "transition_duration": data.get('transition_duration', 0.5),
+            "resolution": str(data.get('resolution', '720')),
             "output_dest": data.get('output_dest', 'youtube'),
             "vps_folder": data.get('vps_folder', '/root/keibot-output')
         }

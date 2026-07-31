@@ -6,7 +6,9 @@ echo "========================================"
 # 1. INSTALL FFMPEG DI SISTEM LINUX (WAJIB UNTUK VISUALIZER)
 echo "⚙️ Menginstal FFMPEG dan Dependensi Sistem..."
 sudo apt-get update -y
-sudo apt-get install -y ffmpeg python3-pip python3-venv
+# fonts-dejavu & fonts-liberation: font TTF (mirip Arial) untuk render teks
+# (tracklist, watermark, timestamp) via PIL, agar mirip live preview.
+sudo apt-get install -y ffmpeg python3-pip python3-venv fonts-dejavu fonts-liberation
 
 # Pindah ke direktori root VPS
 cd /root

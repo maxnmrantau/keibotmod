@@ -751,6 +751,11 @@ input[type=color] { padding:0; height:36px; width:100%; border:1px solid var(--b
 	                <option value="youtube">▶ YouTube</option>
 	                <option value="vps">💾 Simpan di VPS</option>
 	              </select>
+	              <span style="font-size:11px;font-weight:700;color:var(--text);margin-left:6px;">🖥️ Resolusi</span>
+	              <select id="bc-resolution" style="padding:3px 6px;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);" title="Pilih resolusi render. 1080p = kualitas tinggi (background tidak tertekan)">
+	                <option value="720">720p (1280×720)</option>
+	                <option value="1080">1080p (1920×1080)</option>
+	              </select>
 	            </div>
 	          </div>
         </div>
@@ -1266,24 +1271,24 @@ let timeTick = 0;
 function initCanvas() {
   visCanvas = document.getElementById('preset_canvas');
   if (!visCanvas) return;
-  const container = document.getElementById('preview-container');
-  if (container) {
-    visCanvas.width = container.offsetWidth || 640;
-    visCanvas.height = container.offsetHeight || 180;
-  } else {
-    visCanvas.width = 640;
-    visCanvas.height = 180;
-  }
+  // 🎨 Internal canvas resolution = rasio 16:9 yang sama dengan render (720p/1080p),
+  // agar layout preview akurat mewakili layout hasil render. CSS tetap stretch ke container.
+  const resSel = document.getElementById('bc-resolution');
+  const is1080 = resSel && resSel.value === '1080';
+  // proxy 16:9: 854×480 untuk 1080p, 640×360 untuk 720p (hemat performa preview)
+  visCanvas.width = is1080 ? 854 : 640;
+  visCanvas.height = is1080 ? 480 : 360;
   vCtx = visCanvas.getContext('2d');
 }
 
 window.addEventListener('resize', () => {
-  if (visCanvas) {
-    const container = document.getElementById('preview-container');
-    if (container) {
-      visCanvas.width = container.offsetWidth;
-      visCanvas.height = container.offsetHeight;
-    }
+  // internal resolution tetap fixed 16:9 (tidak ikut container), jadi tidak ada aksi resize.
+});
+
+// 🎨 Re-init canvas internal resolution saat user ganti pilihan resolusi render.
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 'bc-resolution') {
+    initCanvas();
   }
 });
 
@@ -2051,6 +2056,7 @@ function processBatch() {
     use_watermark: document.getElementById('bc-use-watermark') ? document.getElementById('bc-use-watermark').checked : false,
     use_timestamp: document.getElementById('bc-use-timestamp') ? document.getElementById('bc-use-timestamp').checked : false,
     output_dest: document.getElementById('bc-output-dest') ? document.getElementById('bc-output-dest').value : 'youtube',
+    resolution: document.getElementById('bc-resolution') ? document.getElementById('bc-resolution').value : '720',
     vps_folder: localStorage.getItem('vps_folder') || '/root/keibot-output',
     smart_cut: document.getElementById('bc-smart-cut') ? document.getElementById('bc-smart-cut').checked : false,
     cut_duration: document.getElementById('bc-cut-duration') ? parseInt(document.getElementById('bc-cut-duration').value) || 5 : 5,
